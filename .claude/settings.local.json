@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(git --version)",
-      "Bash(firebase deploy:*)",
-      "Bash(npm run:*)"
-    ]
-  }
-}

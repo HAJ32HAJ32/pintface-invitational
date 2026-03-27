@@ -21,24 +21,24 @@ const TEAMS = {
 };
 
 const HOLES = [
-  { num: 1, name: null, par: 4, yards: 310, si: 13, desc: "Short par 4 with a deceptively tricky tee shot. Keep left to avoid being blocked by a towering oak on the approach. Elevated green needs a well-struck iron.", challenge: null },
-  { num: 2, name: "Gomorrah", par: 4, yards: 280, si: 17, desc: "Very short par 4 offering a real birdie chance. Reach the top of the slope, favouring the right side for a view of the green. The brave can take on the green from the tee.", challenge: null },
-  { num: 3, name: null, par: 5, yards: 480, si: 5, desc: "First par 5 — not a given birdie. Well-placed bunkers make the third shot tough. Huge bunker front-left swallows many balls. Severe slope in the middle of the green.", challenge: null },
-  { num: 4, name: "Hell Corner", par: 4, yards: 370, si: 1, desc: "Tough tee shot hugging the tree line. Must be long enough to crest the hill for a view of the green. Two deep bunkers guard any miss-struck approach. Par is a very good score.", challenge: "oneclub" },
-  { num: 5, name: "Punch Bowl", par: 3, yards: 165, si: 11, desc: "Stunning par 3. Green sits in a punch bowl with OOB just yards left. Safe bail-out right, but a bunker waits atop the slope. Accuracy is everything.", challenge: "ctp" },
-  { num: 6, name: null, par: 4, yards: 350, si: 7, desc: "Accuracy more important than length. A shot over the marker finds undulating fairway, leaving an approach over a stream to a two-tiered green.", challenge: null },
-  { num: 7, name: null, par: 4, yards: 380, si: 3, desc: "Stream winds the entire length. Fairway is very narrow in places — leave the headcovers on the longer clubs. The hole Gary Player admired.", challenge: null },
-  { num: 8, name: null, par: 5, yards: 490, si: 9, desc: "Driving range is OOB! Well-protected green needs a long iron or layup due to bunkers and the ditch. A hole that demands thought.", challenge: "drive" },
-  { num: 9, name: null, par: 5, yards: 470, si: 15, desc: "Par 5 that takes its toll. Avoid two fairway bunkers from tee and second shot. Third plays longer than expected due to massive elevation change. Breathe at the top!", challenge: null },
-  { num: 10, name: "Waterfall", par: 3, yards: 155, si: 12, desc: "The signature hole. Savour the view from the elevated tee before getting down to business. Plays shorter than the yardage. Danger left. Cross your fingers mid-flight.", challenge: "ctp" },
-  { num: 11, name: "The Valley", par: 4, yards: 355, si: 2, desc: "Gary Player put this in his imaginary top 18 holes of the world. Decisions from the tee — take on large trees or play left for a longer approach to a deep two-tier green.", challenge: null },
-  { num: 12, name: null, par: 4, yards: 340, si: 8, desc: "Deep two-tier green with serious bunkers protecting the right side. The safer play left leaves a longer approach. Strategic thinking required.", challenge: null },
-  { num: 13, name: null, par: 5, yards: 500, si: 4, desc: "Another demanding par 5. Avoid two fairway bunkers from tee and second shot. Third plays longer than expected — massive elevation change ahead.", challenge: null },
-  { num: 14, name: null, par: 4, yards: 345, si: 10, desc: "A plaque commemorates a WWII bomber crash on this hole. Navigate the history and the hazards with a measured approach.", challenge: null },
-  { num: 15, name: null, par: 3, yards: 170, si: 6, desc: "Last par 3, a real beauty surrounded by trouble. Bunkers guard the left, deep ravine and OOB runs the entire right side. Trust your swing and commit.", challenge: "ctp" },
-  { num: 16, name: null, par: 5, yards: 485, si: 14, desc: "Last par 5 and a real chance to improve your score. Fairway slopes right to left the whole way. Two grass ditches lurk. Downhill putts are dangerously slippery.", challenge: null },
-  { num: 17, name: null, par: 4, yards: 365, si: 16, desc: "Almost home! Elevated tee shot — avoid grass bunkers right. Uphill approach to a very shallow green. Take plenty of club. Fast putts above the hole.", challenge: null },
-  { num: 18, name: null, par: 4, yards: 290, si: 18, desc: "Easiest and shortest par 4. Tee shot to the top of the hill earns an easy pitch onto a small green. A definite birdie chance. The Mulligan Hole — use it wisely!", challenge: "mulligan" },
+  { num: 1, name: "Sodom", par: 4, yards: 310, si: 13, image: "/holes/Sodom-hole-1-waterfall-course.jpeg.webp", desc: "Short par 4 with a deceptively tricky tee shot. Keep left to avoid being blocked by a towering oak on the approach. Elevated green needs a well-struck iron.", challenge: null },
+  { num: 2, name: "Gomorrah", par: 4, yards: 280, si: 17, image: "/holes/Gomorrah-hole-2-waterfall-course.jpeg.webp", desc: "Very short par 4 offering a real birdie chance. Reach the top of the slope, favouring the right side for a view of the green. The brave can take on the green from the tee.", challenge: null },
+  { num: 3, name: "Gateway", par: 4, yards: 480, si: 5, image: "/holes/Gateway-hole-3-waterfall-course.jpeg.webp", desc: "Par 4 requiring accuracy to thread the ball through the trees. Well-placed bunkers make the approach tough. Huge bunker front-left swallows many balls. Severe slope in the middle of the green.", challenge: null },
+  { num: 4, name: "Hell Corner", par: 4, yards: 370, si: 1, image: "/holes/Hellcorner-hole-4-waterfall-course.jpeg.webp", desc: "Very appropriately named. Tough tee shot hugging the tree line. Must be long enough to crest the hill for a view of the green. Two deep bunkers guard any miss-struck approach. Par is a very good score.", challenge: "oneclub" },
+  { num: 5, name: "Punch Bowl", par: 3, yards: 165, si: 11, image: "/holes/Punchbowl-hole-5-waterfall-course.jpeg.webp", desc: "First of three stunning par 3s. Green sits in a punch bowl with OOB just yards left. Safe bail-out right, but a bunker waits atop the slope. Accuracy is everything.", challenge: "ctp" },
+  { num: 6, name: "Warren", par: 4, yards: 350, si: 7, image: "/holes/Warren-hole-6-waterfall-course.jpeg.webp", desc: "Accuracy more important than length. A shot over the marker finds undulating fairway, leaving an approach over a stream to a two-tiered green.", challenge: null },
+  { num: 7, name: "John Jones", par: 4, yards: 380, si: 3, image: "/holes/John-jones-hole-7-waterfall-hole.jpeg.webp", desc: "The hardest hole on the course. Stream winds the entire length. Fairway is very narrow in places — leave the headcovers on the longer clubs. The hole Gary Player admired.", challenge: null },
+  { num: 8, name: "Hummocks", par: 5, yards: 490, si: 9, image: "/holes/Hummocks-hole-8-waterfall-course.jpeg.webp", desc: "First par 5 on the course. Driving range is OOB! Well-protected green needs a long iron or layup due to bunkers and the ditch. A hole that demands thought.", challenge: "drive" },
+  { num: 9, name: "Beechers", par: 4, yards: 470, si: 15, image: "/holes/Beechers-hole-9-waterfall-course.jpeg.webp", desc: "Long par 4 that takes its toll. Avoid two fairway bunkers from tee and second shot. Approach plays longer than expected due to massive elevation change. Breathe at the top!", challenge: null },
+  { num: 10, name: "Waterfall", par: 3, yards: 155, si: 12, image: "/holes/Waterfall-hole-10-waterfall-course.jpeg.webp", desc: "The signature hole. Savour the view from the elevated tee before getting down to business. Plays shorter than the yardage. Danger left. Cross your fingers mid-flight.", challenge: "ctp" },
+  { num: 11, name: "Valley", par: 4, yards: 355, si: 2, image: "/holes/Valley-hole-11-waterfall-hole.jpeg.webp", desc: "Gary Player put this in his imaginary top 18 holes of the world. Decisions from the tee — take on large trees or play left for a longer approach to a deep two-tier green.", challenge: null },
+  { num: 12, name: "Horizon", par: 4, yards: 340, si: 8, image: "/holes/Horizon-hole-12-waterfall-course.jpeg.webp", desc: "Deep two-tier green with serious bunkers protecting the right side. The safer play left leaves a longer approach. Strategic thinking required.", challenge: null },
+  { num: 13, name: "Winter Pick", par: 5, yards: 500, si: 4, image: "/holes/Winterfallpick-hole-13-waterfall-course.jpeg.webp", desc: "A demanding par 5. Avoid fairway bunkers from tee and second shot. Third plays longer than expected — massive elevation change ahead.", challenge: null },
+  { num: 14, name: "Blaster", par: 4, yards: 345, si: 10, image: "/holes/Blaster-hole-14-waterfall-course.jpeg.webp", desc: "A plaque commemorates a WWII bomber crash on this hole. Navigate the history and the hazards with a measured approach.", challenge: null },
+  { num: 15, name: "Hill", par: 3, yards: 170, si: 6, image: "/holes/Hill-hole-15-waterfall-course.jpeg.webp", desc: "Last par 3, a real beauty surrounded by trouble. Bunkers guard the left, deep ravine and OOB runs the entire right side. Trust your swing and commit.", challenge: "ctp" },
+  { num: 16, name: "Old Haven", par: 5, yards: 485, si: 14, image: "/holes/Old-haven-hole-16-waterfall-course.jpeg.webp", desc: "Last par 5 and a real chance to improve your score. Fairway slopes right to left the whole way. Two grass ditches lurk. Downhill putts are dangerously slippery.", challenge: null },
+  { num: 17, name: "Holly Bush", par: 4, yards: 365, si: 16, image: "/holes/Hollybush-hole-17-waterfall-course.jpeg.webp", desc: "Almost home! Elevated tee shot — avoid grass bunkers right. Uphill approach to a very shallow green. Take plenty of club. Fast putts above the hole.", challenge: null },
+  { num: 18, name: "Fullers", par: 4, yards: 290, si: 18, image: "/holes/Fullers-hole-18-waterfall-course.jpeg.webp", desc: "Easiest and shortest par 4. Tee shot to the top of the hill earns an easy pitch onto a small green. A definite birdie chance. The Mulligan Hole — use it wisely!", challenge: "mulligan" },
 ];
 
 const CHALLENGE_INFO = {
@@ -822,9 +822,20 @@ function HolesPage({ selectedHole, setSelectedHole }) {
             </div>
           )}
 
-          <p style={{ fontSize: 13, lineHeight: 1.7, color: colors.textDim, margin: 0 }}>
+          <p style={{ fontSize: 13, lineHeight: 1.7, color: colors.textDim, margin: "0 0 12px" }}>
             {hole.desc}
           </p>
+
+          {hole.image && (
+            <div style={{ margin: "0 -16px -16px" }}>
+              <img
+                src={hole.image}
+                alt={`Hole ${hole.num}${hole.name ? ` – ${hole.name}` : ""}`}
+                style={{ width: "100%", display: "block", borderRadius: "0 0 12px 12px" }}
+                onError={e => { e.currentTarget.parentElement.style.display = "none" }}
+              />
+            </div>
+          )}
         </div>
       </Card>
 
