@@ -1,6 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { doc, setDoc, onSnapshot } from "firebase/firestore";
-import { db } from "./firebase";
+import { useState, useEffect, useRef } from "react";
 
 // ─── DATA ───────────────────────────────────────────────────────────────────────
 
@@ -60,7 +58,6 @@ const ODDS_CATEGORIES = [
       { name: "Cupido", odds: "20,000/1", text: "Cupido has survived his first year as a dad with no much golf, meaning this will more than be a tall order for this vertically challenged man. But as the saying goes, every dog has his day…woof" },
       { name: "H", odds: "50,000/1", text: "H will likely use AI to create an app that will work out all the angles, wind and power to calculate exactly how he should hit it…all to see him top it just off the tee box" },
       { name: "Shlid", odds: "75,000/1", text: "SHLID will be more concerned about the itchy scrotch from the new pubic hair style he has in his pants. Will we see a return of the reverse R9 or will we be privileged with a new look framing his far too often seen penis." },
-      { name: "Moon", odds: "1,000,000/1", text: "Moon no doubt has some new grandad senior citizen flex clubs because he’s the del boy of golf clubs. Every moon has his day but he’ll actively be trying to avoid a hole in one as that’ll mean he’ll have to get his wallet out at the bar….maybe get some golf insurance to cover it! will be more concerned about the itchy scrotch from the new pubic hair style he has in his pants. Will we see a return of the reverse R9 or will we be privileged with a new look framing his far too often seen penis." },
     ],
   },
   {
@@ -366,7 +363,7 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole }) {
   );
 }
 
-function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScores }) {
+function ScoringPage({ scores, setScores, currentHole, setCurrentHole }) {
   const hole = HOLES[currentHole - 1];
   const isBack9 = currentHole > 9;
 
@@ -550,16 +547,6 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
           color: colors.bg, fontSize: 13, fontWeight: 700, fontFamily: "'Oswald', sans-serif",
           opacity: currentHole === 18 ? 0.4 : 1,
         }}>Next ›</button>
-      </div>
-
-      {/* Reset Scores — hidden at bottom */}
-      <div style={{ marginTop: 40, paddingBottom: 8, textAlign: "center" }}>
-        <button onClick={resetScores} style={{
-          background: "none", border: `1px solid ${colors.textMuted}33`,
-          borderRadius: 8, padding: "6px 16px", cursor: "pointer",
-          color: colors.textMuted, fontSize: 10, fontFamily: "'Oswald', sans-serif",
-          letterSpacing: 1.5, textTransform: "uppercase", opacity: 0.4,
-        }}>Reset Scores</button>
       </div>
     </div>
   );
@@ -924,50 +911,17 @@ const NAV_ITEMS = [
 
 // ─── APP ────────────────────────────────────────────────────────────────────────
 
-const INITIAL_SCORES = {
-  scramble: { pigs: {}, happy: {} },
-  matchPlay: [{}, {}],
-  matchPairings: [null, null],
-};
-
-const SCORES_DOC = () => doc(db, "game", "live");
-
 export default function App() {
   const [page, setPage] = useState("home");
   const [currentHole, setCurrentHole] = useState(1);
   const [selectedHole, setSelectedHole] = useState(0);
-  const [scores, setScoresLocal] = useState(INITIAL_SCORES);
-  const [loading, setLoading] = useState(true);
+  const [scores, setScores] = useState({
+    scramble: { pigs: {}, happy: {} },
+    matchPlay: [{}, {}],
+    matchPairings: [null, null],
+  });
 
   const scrollRef = useRef(null);
-
-  // Real-time sync from Firestore
-  useEffect(() => {
-    const unsub = onSnapshot(
-      SCORES_DOC(),
-      (snap) => {
-        if (snap.exists()) setScoresLocal(snap.data());
-        setLoading(false);
-      },
-      (err) => { console.error("Firestore error:", err); setLoading(false); }
-    );
-    return unsub;
-  }, []);
-
-  // Write-through: update local state immediately + persist to Firestore
-  const setScores = useCallback((updater) => {
-    setScoresLocal(prev => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      setDoc(SCORES_DOC(), next).catch(console.error);
-      return next;
-    });
-  }, []);
-
-  const resetScores = useCallback(() => {
-    if (window.confirm("Reset all scores? This cannot be undone.")) {
-      setScores(INITIAL_SCORES);
-    }
-  }, [setScores]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTo(0, 0);
@@ -991,12 +945,7 @@ export default function App() {
         {/* Content */}
         <div ref={scrollRef} style={{ paddingBottom: 80, overflowY: "auto" }}>
           {page === "home" && <HomePage scores={scores} currentHole={currentHole} setPage={setPage} setSelectedHole={setSelectedHole} />}
-          {page === "scoring" && <ScoringPage scores={scores} setScores={setScores} currentHole={currentHole} setCurrentHole={setCurrentHole} resetScores={resetScores} />}
-          {loading && page === "scoring" && (
-            <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: colors.bg + "cc", zIndex: 99 }}>
-              <div style={{ color: colors.gold, fontFamily: "'Oswald', sans-serif", letterSpacing: 2, fontSize: 13 }}>LOADING SCORES…</div>
-            </div>
-          )}
+          {page === "scoring" && <ScoringPage scores={scores} setScores={setScores} currentHole={currentHole} setCurrentHole={setCurrentHole} />}
           {page === "holes" && <HolesPage selectedHole={selectedHole} setSelectedHole={setSelectedHole} />}
           {page === "players" && <PlayersPage />}
           {page === "odds" && <OddsPage />}
