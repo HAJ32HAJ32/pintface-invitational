@@ -234,9 +234,10 @@ function SectionTitle({ children, icon }) {
 function HomePage({ scores, currentHole, setPage, setSelectedHole }) {
   const front9Pigs = HOLES.slice(0, 9).reduce((sum, h) => sum + (scores.scramble.pigs[h.num] || 0), 0);
   const front9Happy = HOLES.slice(0, 9).reduce((sum, h) => sum + (scores.scramble.happy[h.num] || 0), 0);
-  const front9Par = HOLES.slice(0, 9).reduce((s, h) => s + h.par, 0);
-  const front9PigsDiff = front9Pigs > 0 ? front9Pigs - front9Par : null;
-  const front9HappyDiff = front9Happy > 0 ? front9Happy - front9Par : null;
+  const front9PigsPar = HOLES.slice(0, 9).reduce((s, h) => s + (scores.scramble.pigs[h.num] > 0 ? h.par : 0), 0);
+  const front9HappyPar = HOLES.slice(0, 9).reduce((s, h) => s + (scores.scramble.happy[h.num] > 0 ? h.par : 0), 0);
+  const front9PigsDiff = front9Pigs > 0 ? front9Pigs - front9PigsPar : null;
+  const front9HappyDiff = front9Happy > 0 ? front9Happy - front9HappyPar : null;
 
   const match1Score = { up: 0, team: null };
   const match2Score = { up: 0, team: null };
