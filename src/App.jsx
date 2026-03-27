@@ -387,7 +387,7 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
         };
         if (!prev.parToPints?.triggered && currentHole > 1 && value === hole.par) {
           const otherTeam = team === "pigs" ? "happy" : "pigs";
-          next.parToPints = { triggered: true, nominatedTeam: otherTeam, spinResult: null, dismissed: false };
+          next.parToPints = { triggered: true, nominatedTeam: otherTeam, spinResult: null, dismissed: false, holeNum: currentHole };
         }
         return next;
       });
@@ -510,11 +510,40 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
       {!isBack9 ? (
         /* Front 9 Scramble */
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {["pigs", "happy"].map(team => {
+          {(currentTeam === "happy" ? ["happy", "pigs"] : ["pigs", "happy"]).map(team => {
             const score = scores.scramble[team][currentHole] || 0;
             const isMyTeam = currentTeam === team;
+            const isOther = currentTeam !== null && !isMyTeam;
+
+            if (isOther) {
+              /* Condensed read-only card for the other team */
+              return (
+                <Card key={team} style={{ background: `${TEAMS[team].color}05`, border: `1px solid ${TEAMS[team].color}18`, padding: "10px 14px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <TeamBadge team={team} size="sm" />
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{
+                        fontSize: 28, fontWeight: 700,
+                        color: score > 0 ? colors.textDim : colors.textMuted,
+                        fontFamily: "'Oswald', sans-serif",
+                      }}>{score || "–"}</div>
+                      {score > 0 && (
+                        <div style={{
+                          fontSize: 11, fontWeight: 600, fontFamily: "'Oswald', sans-serif",
+                          color: score - hole.par > 0 ? colors.danger : score - hole.par < 0 ? colors.accent : colors.gold,
+                        }}>
+                          {score - hole.par === 0 ? "Par" : score - hole.par === -1 ? "Birdie" : score - hole.par === -2 ? "Eagle" : score - hole.par > 0 ? `+${score - hole.par}` : score - hole.par}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            }
+
+            /* Full card — my team (or spectator view when not logged in) */
             return (
-              <Card key={team} style={{ background: `${TEAMS[team].color}08`, border: `1px solid ${TEAMS[team].color}22` }}>
+              <Card key={team} style={{ background: `${TEAMS[team].color}08`, border: `2px solid ${TEAMS[team].color}44` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <TeamBadge team={team} size="lg" />
@@ -604,18 +633,21 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
                       );
                     })}
                   </div>
-                  {["pigs", "happy"].map(teamSide => (
-                    <TeeShotPicker
-                      key={teamSide}
-                      players={scores.matchPairings[matchIdx][teamSide]}
-                      selected={scores.teeShotUsed?.matchPlay?.[matchIdx]?.[teamSide]?.[currentHole] || null}
-                      onSelect={currentTeam === teamSide ? (pid) => updateMatchPlayTeeShot(matchIdx, teamSide, pid) : null}
-                      teamColor={TEAMS[teamSide].color}
-                      counts={matchPlayTeeShots(matchIdx, teamSide)}
-                      minRequired={3}
-                      currentHole={currentHole}
-                    />
-                  ))}
+                  {["pigs", "happy"].map(teamSide => {
+                    if (currentTeam && currentTeam !== teamSide) return null;
+                    return (
+                      <TeeShotPicker
+                        key={teamSide}
+                        players={scores.matchPairings[matchIdx][teamSide]}
+                        selected={scores.teeShotUsed?.matchPlay?.[matchIdx]?.[teamSide]?.[currentHole] || null}
+                        onSelect={currentTeam === teamSide ? (pid) => updateMatchPlayTeeShot(matchIdx, teamSide, pid) : null}
+                        teamColor={TEAMS[teamSide].color}
+                        counts={matchPlayTeeShots(matchIdx, teamSide)}
+                        minRequired={3}
+                        currentHole={currentHole}
+                      />
+                    );
+                  })}
                 </>
               ) : (
                 <button onClick={() => {}} style={{
@@ -1113,6 +1145,8 @@ const SPIN_TARGET = { beer: 5 * 360 + 22.5, miniature: 5 * 360 + 67.5 };
 function ParToPintsOverlay({ scores, setScores, currentTeam }) {
   const { nominatedTeam, spinResult } = scores.parToPints || {};
   const nominated = TEAMS[nominatedTeam];
+  const isNominated = currentTeam === nominatedTeam;
+  const scoringTeam = TEAMS[nominatedTeam === "pigs" ? "happy" : "pigs"];
   const [wheelRotation, setWheelRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -1170,10 +1204,12 @@ function ParToPintsOverlay({ scores, setScores, currentTeam }) {
       <div style={{ textAlign: "center", marginBottom: 8 }}>
         <div style={{ fontSize: 32, marginBottom: 4 }}>🍺</div>
         <div style={{ fontSize: 26, fontWeight: 700, color: colors.gold, fontFamily: "'Oswald', sans-serif", letterSpacing: 2 }}>
-          PAR TO PINTS!
+          {isNominated ? "PAR TO PINTS — YOU'RE UP!" : "PAR TO PINTS!"}
         </div>
         <div style={{ fontSize: 14, color: nominated?.color || colors.text, fontFamily: "'Oswald', sans-serif", marginTop: 4, letterSpacing: 1 }}>
-          {nominated?.name} — you're on the wheel!
+          {isNominated
+            ? `${scoringTeam?.name} scored par — spin to find your fate!`
+            : `${nominated?.name} face the wheel!`}
         </div>
       </div>
 
@@ -1272,7 +1308,7 @@ function ParToPintsOverlay({ scores, setScores, currentTeam }) {
             {spinResult === "beer" ? "BEER!" : "MINIATURE!"}
           </div>
           <div style={{ fontSize: 16, color: colors.textDim, marginTop: 4, fontFamily: "'Oswald', sans-serif" }}>
-            Down it! 🤘
+            {isNominated ? "Down it! 🤘" : `${nominated?.name} — down it! 😈`}
           </div>
           {/* Countdown bar */}
           <div style={{ marginTop: 12, height: 4, borderRadius: 2, background: colors.bgSurface, overflow: "hidden" }}>
@@ -1371,6 +1407,7 @@ const INITIAL_SCORES = {
     nominatedTeam: null,
     spinResult: null,
     dismissed: false,
+    holeNum: null,
   },
 };
 
