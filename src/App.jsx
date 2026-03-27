@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { doc, setDoc, onSnapshot } from "firebase/firestore";
+import { db } from "./firebase";
 
 // ─── DATA ───────────────────────────────────────────────────────────────────────
 
@@ -363,7 +365,7 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole }) {
   );
 }
 
-function ScoringPage({ scores, setScores, currentHole, setCurrentHole }) {
+function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScores }) {
   const hole = HOLES[currentHole - 1];
   const isBack9 = currentHole > 9;
 
@@ -547,6 +549,16 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole }) {
           color: colors.bg, fontSize: 13, fontWeight: 700, fontFamily: "'Oswald', sans-serif",
           opacity: currentHole === 18 ? 0.4 : 1,
         }}>Next ›</button>
+      </div>
+
+      {/* Reset Scores — hidden at bottom */}
+      <div style={{ marginTop: 40, paddingBottom: 8, textAlign: "center" }}>
+        <button onClick={resetScores} style={{
+          background: "none", border: `1px solid ${colors.textMuted}33`,
+          borderRadius: 8, padding: "6px 16px", cursor: "pointer",
+          color: colors.textMuted, fontSize: 10, fontFamily: "'Oswald', sans-serif",
+          letterSpacing: 1.5, textTransform: "uppercase", opacity: 0.4,
+        }}>Reset Scores</button>
       </div>
     </div>
   );
@@ -911,17 +923,50 @@ const NAV_ITEMS = [
 
 // ─── APP ────────────────────────────────────────────────────────────────────────
 
+const INITIAL_SCORES = {
+  scramble: { pigs: {}, happy: {} },
+  matchPlay: [{}, {}],
+  matchPairings: [null, null],
+};
+
+const SCORES_DOC = () => doc(db, "game", "live");
+
 export default function App() {
   const [page, setPage] = useState("home");
   const [currentHole, setCurrentHole] = useState(1);
   const [selectedHole, setSelectedHole] = useState(0);
-  const [scores, setScores] = useState({
-    scramble: { pigs: {}, happy: {} },
-    matchPlay: [{}, {}],
-    matchPairings: [null, null],
-  });
+  const [scores, setScoresLocal] = useState(INITIAL_SCORES);
+  const [loading, setLoading] = useState(true);
 
   const scrollRef = useRef(null);
+
+  // Real-time sync from Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(
+      SCORES_DOC(),
+      (snap) => {
+        if (snap.exists()) setScoresLocal(snap.data());
+        setLoading(false);
+      },
+      (err) => { console.error("Firestore error:", err); setLoading(false); }
+    );
+    return unsub;
+  }, []);
+
+  // Write-through: update local state immediately + persist to Firestore
+  const setScores = useCallback((updater) => {
+    setScoresLocal(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      setDoc(SCORES_DOC(), next).catch(console.error);
+      return next;
+    });
+  }, []);
+
+  const resetScores = useCallback(() => {
+    if (window.confirm("Reset all scores? This cannot be undone.")) {
+      setScores(INITIAL_SCORES);
+    }
+  }, [setScores]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTo(0, 0);
@@ -945,7 +990,12 @@ export default function App() {
         {/* Content */}
         <div ref={scrollRef} style={{ paddingBottom: 80, overflowY: "auto" }}>
           {page === "home" && <HomePage scores={scores} currentHole={currentHole} setPage={setPage} setSelectedHole={setSelectedHole} />}
-          {page === "scoring" && <ScoringPage scores={scores} setScores={setScores} currentHole={currentHole} setCurrentHole={setCurrentHole} />}
+          {page === "scoring" && <ScoringPage scores={scores} setScores={setScores} currentHole={currentHole} setCurrentHole={setCurrentHole} resetScores={resetScores} />}
+          {loading && page === "scoring" && (
+            <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: colors.bg + "cc", zIndex: 99 }}>
+              <div style={{ color: colors.gold, fontFamily: "'Oswald', sans-serif", letterSpacing: 2, fontSize: 13 }}>LOADING SCORES…</div>
+            </div>
+          )}
           {page === "holes" && <HolesPage selectedHole={selectedHole} setSelectedHole={setSelectedHole} />}
           {page === "players" && <PlayersPage />}
           {page === "odds" && <OddsPage />}
