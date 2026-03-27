@@ -372,10 +372,17 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
 
   const updateScore = (team, value) => {
     if (!isBack9) {
-      setScores(prev => ({
-        ...prev,
-        scramble: { ...prev.scramble, [team]: { ...prev.scramble[team], [currentHole]: value } },
-      }));
+      setScores(prev => {
+        const next = {
+          ...prev,
+          scramble: { ...prev.scramble, [team]: { ...prev.scramble[team], [currentHole]: value } },
+        };
+        if (!prev.parToPints?.triggered && currentHole > 1 && value === hole.par) {
+          const otherTeam = team === "pigs" ? "happy" : "pigs";
+          next.parToPints = { triggered: true, nominatedTeam: otherTeam, spinResult: null, dismissed: false };
+        }
+        return next;
+      });
     }
   };
 
@@ -1068,6 +1075,190 @@ function TeeShotPicker({ players, selected, onSelect, teamColor, counts, minRequ
   );
 }
 
+// ─── PAR TO PINTS ───────────────────────────────────────────────────────────────
+
+const WHEEL_SEGMENTS = [
+  { label: "🍺", type: "beer",      color: "#F4A940" },
+  { label: "🥃", type: "miniature", color: "#4ECDC4" },
+  { label: "🍺", type: "beer",      color: "#F4A940" },
+  { label: "🥃", type: "miniature", color: "#4ECDC4" },
+  { label: "🍺", type: "beer",      color: "#F4A940" },
+  { label: "🥃", type: "miniature", color: "#4ECDC4" },
+  { label: "🍺", type: "beer",      color: "#F4A940" },
+  { label: "🥃", type: "miniature", color: "#4ECDC4" },
+];
+
+// Segment centres (degrees): Beer=22.5,112.5,202.5,292.5 | Mini=67.5,157.5,247.5,337.5
+const SPIN_TARGET = { beer: 5 * 360 + 22.5, miniature: 5 * 360 + 67.5 };
+
+function ParToPintsOverlay({ scores, setScores, currentTeam }) {
+  const { nominatedTeam, spinResult } = scores.parToPints || {};
+  const nominated = TEAMS[nominatedTeam];
+  const [wheelRotation, setWheelRotation] = useState(0);
+  const [spinning, setSpinning] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+  const [countdown, setCountdown] = useState(3);
+  const hasAnimated = useRef(false);
+
+  useEffect(() => {
+    if (!spinResult || hasAnimated.current) return;
+    hasAnimated.current = true;
+    setWheelRotation(SPIN_TARGET[spinResult]);
+    setSpinning(true);
+    const t1 = setTimeout(() => {
+      setSpinning(false);
+      setShowResult(true);
+      let c = 3;
+      const tick = setInterval(() => {
+        c -= 1;
+        setCountdown(c);
+        if (c <= 0) {
+          clearInterval(tick);
+          setScores(prev => ({ ...prev, parToPints: { ...prev.parToPints, dismissed: true } }));
+        }
+      }, 1000);
+    }, 4200);
+    return () => clearTimeout(t1);
+  }, [spinResult]); // eslint-disable-line
+
+  const handleSpin = () => {
+    if (spinning || spinResult) return;
+    const result = Math.random() < 0.5 ? "beer" : "miniature";
+    setScores(prev => ({ ...prev, parToPints: { ...prev.parToPints, spinResult: result } }));
+  };
+
+  const canSpin = currentTeam === nominatedTeam && !spinResult;
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 300,
+      background: "rgba(10,26,15,0.92)",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "center", padding: 24,
+    }}>
+      {/* Header */}
+      <div style={{ textAlign: "center", marginBottom: 8 }}>
+        <div style={{ fontSize: 32, marginBottom: 4 }}>🍺</div>
+        <div style={{ fontSize: 26, fontWeight: 700, color: colors.gold, fontFamily: "'Oswald', sans-serif", letterSpacing: 2 }}>
+          PAR TO PINTS!
+        </div>
+        <div style={{ fontSize: 14, color: nominated?.color || colors.text, fontFamily: "'Oswald', sans-serif", marginTop: 4, letterSpacing: 1 }}>
+          {nominated?.name} — you're on the wheel!
+        </div>
+      </div>
+
+      {/* Wheel container */}
+      <div style={{ position: "relative", width: 260, height: 280, margin: "16px auto 8px" }}>
+        {/* Pointer */}
+        <div style={{
+          position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+          width: 0, height: 0, zIndex: 2,
+          borderLeft: "10px solid transparent",
+          borderRight: "10px solid transparent",
+          borderTop: `22px solid ${colors.gold}`,
+        }} />
+
+        {/* Wheel */}
+        <div style={{
+          position: "absolute", top: 22, left: "50%", transform: `translateX(-50%) rotate(${wheelRotation}deg)`,
+          transition: spinning ? "transform 4.2s cubic-bezier(0.17, 0.67, 0.08, 0.99)" : "none",
+          width: 240, height: 240, borderRadius: "50%",
+          background: `conic-gradient(${WHEEL_SEGMENTS.map((s, i) => `${s.color} ${i * 45}deg ${(i + 1) * 45}deg`).join(", ")})`,
+          border: `4px solid ${colors.gold}44`,
+          boxShadow: `0 0 30px ${colors.gold}33`,
+        }}>
+          {/* Segment labels */}
+          {WHEEL_SEGMENTS.map((seg, i) => {
+            const angle = i * 45 + 22.5; // centre of segment in degrees
+            const rad = (angle - 90) * (Math.PI / 180);
+            const r = 82;
+            const x = 120 + r * Math.cos(rad);
+            const y = 120 + r * Math.sin(rad);
+            return (
+              <div key={i} style={{
+                position: "absolute", fontSize: 20,
+                left: x - 12, top: y - 12,
+                width: 24, height: 24,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                userSelect: "none",
+              }}>
+                {seg.label}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Wheel hub */}
+        <div style={{
+          position: "absolute", top: 22 + 100, left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 24, height: 24, borderRadius: "50%",
+          background: colors.gold, zIndex: 2,
+          boxShadow: `0 0 8px ${colors.gold}88`,
+        }} />
+      </div>
+
+      {/* CTA */}
+      {!showResult && (
+        <div style={{ textAlign: "center", marginTop: 8 }}>
+          {canSpin ? (
+            <button onClick={handleSpin} disabled={spinning} style={{
+              padding: "14px 48px", borderRadius: 12,
+              background: spinning ? colors.bgCard : colors.gold,
+              border: "none", color: spinning ? colors.textMuted : colors.bg,
+              fontSize: 20, fontWeight: 700, cursor: spinning ? "default" : "pointer",
+              fontFamily: "'Oswald', sans-serif", letterSpacing: 2,
+              boxShadow: spinning ? "none" : `0 0 20px ${colors.gold}66`,
+              transition: "all 0.2s",
+            }}>
+              {spinning ? "SPINNING…" : "SPIN"}
+            </button>
+          ) : spinResult ? (
+            <div style={{ fontSize: 13, color: colors.textDim, fontFamily: "'Oswald', sans-serif", letterSpacing: 1 }}>
+              {spinning ? "SPINNING…" : "Revealing…"}
+            </div>
+          ) : (
+            <div style={{ fontSize: 13, color: colors.textDim, fontFamily: "'Oswald', sans-serif", letterSpacing: 1 }}>
+              Waiting for {nominated?.name} to spin…
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Result card */}
+      {showResult && (
+        <div style={{
+          textAlign: "center", marginTop: 8,
+          padding: "20px 32px", borderRadius: 16,
+          background: colors.bgCard,
+          border: `2px solid ${spinResult === "beer" ? "#F4A940" : "#4ECDC4"}`,
+          boxShadow: `0 0 30px ${spinResult === "beer" ? "#F4A94066" : "#4ECDC466"}`,
+        }}>
+          <div style={{ fontSize: 52, marginBottom: 4 }}>{spinResult === "beer" ? "🍺" : "🥃"}</div>
+          <div style={{
+            fontSize: 32, fontWeight: 700, fontFamily: "'Oswald', sans-serif",
+            color: spinResult === "beer" ? "#F4A940" : "#4ECDC4", letterSpacing: 2,
+          }}>
+            {spinResult === "beer" ? "BEER!" : "MINIATURE!"}
+          </div>
+          <div style={{ fontSize: 16, color: colors.textDim, marginTop: 4, fontFamily: "'Oswald', sans-serif" }}>
+            Down it! 🤘
+          </div>
+          {/* Countdown bar */}
+          <div style={{ marginTop: 12, height: 4, borderRadius: 2, background: colors.bgSurface, overflow: "hidden" }}>
+            <div style={{
+              height: "100%", borderRadius: 2,
+              background: spinResult === "beer" ? "#F4A940" : "#4ECDC4",
+              width: `${(countdown / 3) * 100}%`,
+              transition: "width 1s linear",
+            }} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── PLAYER SELECT ──────────────────────────────────────────────────────────────
 
 function PlayerSelectScreen({ onSelect }) {
@@ -1145,6 +1336,12 @@ const INITIAL_SCORES = {
   },
   matchPlay: [{}, {}],
   matchPairings: [null, null],
+  parToPints: {
+    triggered: false,
+    nominatedTeam: null,
+    spinResult: null,
+    dismissed: false,
+  },
 };
 
 const SCORES_DOC = () => doc(db, "game", "live");
@@ -1279,6 +1476,9 @@ export default function App() {
         </div>
       </div>
       {!currentPlayer && <PlayerSelectScreen onSelect={selectPlayer} />}
+      {scores.parToPints?.triggered && !scores.parToPints?.dismissed && (
+        <ParToPintsOverlay scores={scores} setScores={setScores} currentTeam={currentTeam} />
+      )}
     </>
   );
 }
