@@ -247,27 +247,34 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole }) {
   return (
     <div style={{ padding: "0 16px 100px" }}>
       {/* Hero */}
-      <div style={{ textAlign: "center", padding: "28px 0 20px", position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 0 20px", position: "relative" }}>
         <div style={{
-          position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+          position: "absolute", top: "50%", left: "0%", transform: "translateY(-50%)",
           width: 200, height: 200, borderRadius: "50%",
           background: `radial-gradient(circle, ${colors.gold}08 0%, transparent 70%)`,
         }} />
-        <div style={{
-          fontSize: 10, letterSpacing: 4, color: colors.goldDim,
-          fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 4,
-        }}>The 2nd Annual</div>
-        <h1 style={{
-          margin: 0, fontSize: 32, fontWeight: 700,
-          fontFamily: "'Playfair Display', serif",
-          background: `linear-gradient(135deg, ${colors.goldLight} 0%, ${colors.gold} 50%, ${colors.goldDim} 100%)`,
-          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          lineHeight: 1.1,
-        }}>Pint Face<br />Invitational</h1>
-        <div style={{
-          fontSize: 9, letterSpacing: 3, color: colors.textMuted, marginTop: 8,
-          fontFamily: "'Oswald', sans-serif", textTransform: "uppercase",
-        }}>Mannings Heath — Waterfall Course</div>
+        <div style={{ textAlign: "left", position: "relative" }}>
+          <div style={{
+            fontSize: 10, letterSpacing: 4, color: colors.goldDim,
+            fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 4,
+          }}>The 2nd Annual</div>
+          <h1 style={{
+            margin: 0, fontSize: 32, fontWeight: 700,
+            fontFamily: "'Playfair Display', serif",
+            background: `linear-gradient(135deg, ${colors.goldLight} 0%, ${colors.gold} 50%, ${colors.goldDim} 100%)`,
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            lineHeight: 1.1,
+          }}>Pint Face<br />Invitational</h1>
+          <div style={{
+            fontSize: 9, letterSpacing: 3, color: colors.textMuted, marginTop: 8,
+            fontFamily: "'Oswald', sans-serif", textTransform: "uppercase",
+          }}>Mannings Heath — Waterfall Course</div>
+        </div>
+        <img
+          src="/logo.png"
+          alt="Pint Face Invitational"
+          style={{ height: 110, width: "auto", flexShrink: 0, marginLeft: 12 }}
+        />
       </div>
 
       {/* Score Summary */}
