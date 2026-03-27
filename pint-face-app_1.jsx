@@ -58,7 +58,8 @@ const ODDS_CATEGORIES = [
       { name: "Cupido", odds: "20,000/1", text: "Cupido has survived his first year as a dad with no much golf, meaning this will more than be a tall order for this vertically challenged man. But as the saying goes, every dog has his day…woof" },
       { name: "H", odds: "50,000/1", text: "H will likely use AI to create an app that will work out all the angles, wind and power to calculate exactly how he should hit it…all to see him top it just off the tee box" },
       { name: "Shlid", odds: "75,000/1", text: "SHLID will be more concerned about the itchy scrotch from the new pubic hair style he has in his pants. Will we see a return of the reverse R9 or will we be privileged with a new look framing his far too often seen penis." },
-    ],
+      { name: "Moon", odds: "1,000,000/1", text: "Moon no doubt has some new grandad senior citizen flex clubs because he’s the del boy of golf clubs. Every moon has his day but he’ll actively be trying to avoid a hole in one as that’ll mean he’ll have to get his wallet out at the bar….maybe get some golf insurance to cover it! will be more concerned about the itchy scrotch from the new pubic hair style he has in his pants. Will we see a return of the reverse R9 or will we be privileged with a new look framing his far too often seen penis." },
+    ],,
   },
   {
     title: "First to Hit Water",
