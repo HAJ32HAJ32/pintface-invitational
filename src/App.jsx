@@ -387,6 +387,45 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
     });
   };
 
+  const updateScrambleTeeShot = (team, playerId) => {
+    setScores(prev => ({
+      ...prev,
+      teeShotUsed: {
+        ...prev.teeShotUsed,
+        scramble: {
+          ...prev.teeShotUsed?.scramble,
+          [team]: { ...prev.teeShotUsed?.scramble?.[team], [currentHole]: playerId },
+        },
+      },
+    }));
+  };
+
+  const updateMatchPlayTeeShot = (matchIdx, team, playerId) => {
+    setScores(prev => {
+      const mp = [...(prev.teeShotUsed?.matchPlay || [{pigs:{},happy:{}},{pigs:{},happy:{}}])];
+      mp[matchIdx] = { ...mp[matchIdx], [team]: { ...mp[matchIdx][team], [currentHole]: playerId } };
+      return { ...prev, teeShotUsed: { ...prev.teeShotUsed, matchPlay: mp } };
+    });
+  };
+
+  // Tally helpers
+  const scrambleTeeShots = (team) => {
+    const used = scores.teeShotUsed?.scramble?.[team] || {};
+    return TEAMS[team].members.reduce((acc, pid) => {
+      acc[pid] = Object.values(used).filter(v => v === pid).length;
+      return acc;
+    }, {});
+  };
+
+  const matchPlayTeeShots = (matchIdx, team) => {
+    const used = scores.teeShotUsed?.matchPlay?.[matchIdx]?.[team] || {};
+    const players = scores.matchPairings?.[matchIdx]?.[team] || [];
+    return players.reduce((acc, pid) => {
+      acc[pid] = Object.values(used).filter(v => v === pid).length;
+      return acc;
+    }, {});
+  };
+
   return (
     <div style={{ padding: "0 16px 100px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 4px" }}>
@@ -505,6 +544,15 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
                     {score - hole.par === 0 ? "Par" : score - hole.par === -1 ? "Birdie!" : score - hole.par === -2 ? "Eagle!!" : score - hole.par > 0 ? `+${score - hole.par}` : score - hole.par}
                   </div>
                 )}
+                <TeeShotPicker
+                  players={TEAMS[team].members}
+                  selected={scores.teeShotUsed?.scramble?.[team]?.[currentHole] || null}
+                  onSelect={isMyTeam ? (pid) => updateScrambleTeeShot(team, pid) : null}
+                  teamColor={TEAMS[team].color}
+                  counts={scrambleTeeShots(team)}
+                  minRequired={2}
+                  currentHole={currentHole}
+                />
               </Card>
             );
           })}
@@ -523,23 +571,37 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
                   : "Pairings not set yet"}
               </div>
               {scores.matchPairings[matchIdx] ? (
-                <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
-                  {["pigs", "happy", "halved"].map(result => {
-                    const current = scores.matchPlay[matchIdx]?.[currentHole];
-                    const active = current === result;
-                    return (
-                      <button key={result} onClick={() => updateMatchPlay(matchIdx, currentHole, result)} style={{
-                        padding: "8px 16px", borderRadius: 8, cursor: "pointer",
-                        background: active ? (result === "pigs" ? TEAMS.pigs.color : result === "happy" ? TEAMS.happy.color : colors.gold) : colors.bgSurface,
-                        border: `1px solid ${active ? "transparent" : colors.greenLight + "33"}`,
-                        color: active ? "#fff" : colors.textDim,
-                        fontSize: 12, fontWeight: 600, fontFamily: "'Oswald', sans-serif",
-                      }}>
-                        {result === "halved" ? "Halved" : TEAMS[result].short}
-                      </button>
-                    );
-                  })}
-                </div>
+                <>
+                  <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+                    {["pigs", "happy", "halved"].map(result => {
+                      const current = scores.matchPlay[matchIdx]?.[currentHole];
+                      const active = current === result;
+                      return (
+                        <button key={result} onClick={() => updateMatchPlay(matchIdx, currentHole, result)} style={{
+                          padding: "8px 16px", borderRadius: 8, cursor: "pointer",
+                          background: active ? (result === "pigs" ? TEAMS.pigs.color : result === "happy" ? TEAMS.happy.color : colors.gold) : colors.bgSurface,
+                          border: `1px solid ${active ? "transparent" : colors.greenLight + "33"}`,
+                          color: active ? "#fff" : colors.textDim,
+                          fontSize: 12, fontWeight: 600, fontFamily: "'Oswald', sans-serif",
+                        }}>
+                          {result === "halved" ? "Halved" : TEAMS[result].short}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {["pigs", "happy"].map(teamSide => (
+                    <TeeShotPicker
+                      key={teamSide}
+                      players={scores.matchPairings[matchIdx][teamSide]}
+                      selected={scores.teeShotUsed?.matchPlay?.[matchIdx]?.[teamSide]?.[currentHole] || null}
+                      onSelect={currentTeam === teamSide ? (pid) => updateMatchPlayTeeShot(matchIdx, teamSide, pid) : null}
+                      teamColor={TEAMS[teamSide].color}
+                      counts={matchPlayTeeShots(matchIdx, teamSide)}
+                      minRequired={3}
+                      currentHole={currentHole}
+                    />
+                  ))}
+                </>
               ) : (
                 <button onClick={() => {}} style={{
                   width: "100%", padding: 10, borderRadius: 8, cursor: "pointer",
@@ -945,6 +1007,67 @@ const NAV_ITEMS = [
   { id: "odds", icon: "🎰", label: "Odds" },
 ];
 
+// ─── TEE SHOT PICKER ────────────────────────────────────────────────────────────
+
+function TeeShotPicker({ players, selected, onSelect, teamColor, counts, minRequired, currentHole }) {
+  const isBack9 = currentHole > 9;
+  const holesInHalf = 9;
+  const holesPlayed = isBack9 ? currentHole - 9 : currentHole;
+  const holesLeft = holesInHalf - holesPlayed;
+  const isReadOnly = !onSelect;
+
+  return (
+    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${teamColor}22` }}>
+      <div style={{ fontSize: 8, letterSpacing: 2, color: teamColor, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 8 }}>
+        Tee Shot Used
+      </div>
+      {/* Player picker buttons */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+        {players.map(pid => {
+          const p = PLAYERS[pid];
+          const isSelected = selected === pid;
+          return (
+            <button
+              key={pid}
+              onClick={isReadOnly ? undefined : () => onSelect(isSelected ? null : pid)}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "5px 10px", borderRadius: 20, cursor: isReadOnly ? "default" : "pointer",
+                background: isSelected ? teamColor + "33" : "transparent",
+                border: `1px solid ${isSelected ? teamColor : teamColor + "33"}`,
+                color: isSelected ? "#fff" : teamColor,
+                fontSize: 11, fontWeight: 600, fontFamily: "'Oswald', sans-serif",
+                opacity: isReadOnly && !isSelected ? 0.5 : 1,
+              }}
+            >
+              <span style={{ fontSize: 13 }}>{p.emoji}</span>
+              {p.name}
+            </button>
+          );
+        })}
+      </div>
+      {/* Running tally */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {players.map(pid => {
+          const count = counts[pid] || 0;
+          const atRisk = holesLeft < (minRequired - count) && count < minRequired;
+          const done = count >= minRequired;
+          const badgeColor = done ? "#4ECDC4" : atRisk ? "#F4A940" : teamColor;
+          return (
+            <span key={pid} style={{
+              fontSize: 10, padding: "2px 8px", borderRadius: 10,
+              background: badgeColor + "22", border: `1px solid ${badgeColor}44`,
+              color: badgeColor, fontFamily: "'Oswald', sans-serif", fontWeight: 600,
+            }}>
+              {PLAYERS[pid].name}: {count}{done ? " ✓" : atRisk ? " !" : `/${minRequired}`}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── PLAYER SELECT ──────────────────────────────────────────────────────────────
 
 function PlayerSelectScreen({ onSelect }) {
@@ -1013,6 +1136,13 @@ function PlayerSelectScreen({ onSelect }) {
 
 const INITIAL_SCORES = {
   scramble: { pigs: {}, happy: {} },
+  teeShotUsed: {
+    scramble: { pigs: {}, happy: {} },
+    matchPlay: [
+      { pigs: {}, happy: {} },
+      { pigs: {}, happy: {} },
+    ],
+  },
   matchPlay: [{}, {}],
   matchPairings: [null, null],
 };
