@@ -1136,6 +1136,17 @@ function ParToPintsOverlay({ scores, setScores, currentTeam }) {
       display: "flex", flexDirection: "column", alignItems: "center",
       justifyContent: "center", padding: 24,
     }}>
+      {/* Close button */}
+      <button
+        onClick={() => setScores(prev => ({ ...prev, parToPints: { ...prev.parToPints, dismissed: true } }))}
+        style={{
+          position: "absolute", top: 16, right: 16,
+          background: "none", border: `1px solid ${colors.textMuted}44`,
+          borderRadius: 8, padding: "4px 10px", cursor: "pointer",
+          color: colors.textMuted, fontSize: 18, lineHeight: 1,
+        }}
+      >✕</button>
+
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 8 }}>
         <div style={{ fontSize: 32, marginBottom: 4 }}>🍺</div>
