@@ -366,7 +366,7 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole }) {
   );
 }
 
-function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScores }) {
+function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScores, currentTeam, currentPlayer, onChangePlayer }) {
   const hole = HOLES[currentHole - 1];
   const isBack9 = currentHole > 9;
 
@@ -389,10 +389,23 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
 
   return (
     <div style={{ padding: "0 16px 100px" }}>
-      <div style={{ textAlign: "center", padding: "20px 0 16px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 4px" }}>
         <div style={{ fontSize: 9, letterSpacing: 2.5, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>
           {isBack9 ? "Match Play" : "Texas Scramble"}
         </div>
+        {currentPlayer && (
+          <button onClick={onChangePlayer} style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: "none", border: `1px solid ${colors.greenLight}22`,
+            borderRadius: 20, padding: "4px 10px", cursor: "pointer",
+          }}>
+            <span style={{ fontSize: 14 }}>{PLAYERS[currentPlayer].emoji}</span>
+            <span style={{ fontSize: 10, color: colors.textDim, fontFamily: "'Oswald', sans-serif", letterSpacing: 0.5 }}>
+              {PLAYERS[currentPlayer].name}
+            </span>
+            <span style={{ fontSize: 9, color: colors.textMuted }}>▾</span>
+          </button>
+        )}
       </div>
 
       {/* Hole Selector */}
@@ -445,6 +458,7 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {["pigs", "happy"].map(team => {
             const score = scores.scramble[team][currentHole] || 0;
+            const isMyTeam = currentTeam === team;
             return (
               <Card key={team} style={{ background: `${TEAMS[team].color}08`, border: `1px solid ${TEAMS[team].color}22` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -455,22 +469,31 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <button onClick={() => updateScore(team, Math.max(0, score - 1))} style={{
-                      width: 36, height: 36, borderRadius: "50%",
-                      background: colors.bgSurface, border: `1px solid ${colors.greenLight}33`,
-                      color: colors.text, fontSize: 20, cursor: "pointer",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>−</button>
-                    <div style={{
-                      fontSize: 36, fontWeight: 700, color: score > 0 ? colors.white : colors.textMuted,
-                      fontFamily: "'Oswald', sans-serif", minWidth: 36, textAlign: "center",
-                    }}>{score || "–"}</div>
-                    <button onClick={() => updateScore(team, score + 1)} style={{
-                      width: 36, height: 36, borderRadius: "50%",
-                      background: colors.gold, border: "none",
-                      color: colors.bg, fontSize: 20, cursor: "pointer", fontWeight: 700,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>+</button>
+                    {isMyTeam ? (
+                      <>
+                        <button onClick={() => updateScore(team, Math.max(0, score - 1))} style={{
+                          width: 36, height: 36, borderRadius: "50%",
+                          background: colors.bgSurface, border: `1px solid ${colors.greenLight}33`,
+                          color: colors.text, fontSize: 20, cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>−</button>
+                        <div style={{
+                          fontSize: 36, fontWeight: 700, color: score > 0 ? colors.white : colors.textMuted,
+                          fontFamily: "'Oswald', sans-serif", minWidth: 36, textAlign: "center",
+                        }}>{score || "–"}</div>
+                        <button onClick={() => updateScore(team, score + 1)} style={{
+                          width: 36, height: 36, borderRadius: "50%",
+                          background: colors.gold, border: "none",
+                          color: colors.bg, fontSize: 20, cursor: "pointer", fontWeight: 700,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>+</button>
+                      </>
+                    ) : (
+                      <div style={{
+                        fontSize: 36, fontWeight: 700, color: score > 0 ? colors.white : colors.textMuted,
+                        fontFamily: "'Oswald', sans-serif", minWidth: 36, textAlign: "center",
+                      }}>{score || "–"}</div>
+                    )}
                   </div>
                 </div>
                 {score > 0 && (
@@ -922,6 +945,70 @@ const NAV_ITEMS = [
   { id: "odds", icon: "🎰", label: "Odds" },
 ];
 
+// ─── PLAYER SELECT ──────────────────────────────────────────────────────────────
+
+function PlayerSelectScreen({ onSelect }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 200,
+      background: colors.bg,
+      backgroundImage: `radial-gradient(ellipse at 50% 0%, ${colors.greenDark}66 0%, transparent 60%)`,
+      display: "flex", flexDirection: "column", alignItems: "center",
+      overflowY: "auto", padding: "40px 20px 60px",
+    }}>
+      <div style={{ width: "100%", maxWidth: 400 }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ fontSize: 36, marginBottom: 8 }}>⛳</div>
+          <h1 style={{
+            margin: 0, fontSize: 28, fontWeight: 700, color: colors.gold,
+            fontFamily: "'Oswald', sans-serif", letterSpacing: 1,
+          }}>PINTFACE INVITATIONAL</h1>
+          <div style={{ fontSize: 12, color: colors.textDim, marginTop: 6, fontFamily: "'Oswald', sans-serif", letterSpacing: 2 }}>
+            WHO ARE YOU?
+          </div>
+        </div>
+
+        {["pigs", "happy"].map(team => (
+          <div key={team} style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <TeamBadge team={team} size="lg" />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {TEAMS[team].members.map(pid => {
+                const p = PLAYERS[pid];
+                return (
+                  <button key={pid} onClick={() => onSelect(pid)} style={{
+                    display: "flex", alignItems: "center", gap: 14,
+                    padding: "14px 16px", borderRadius: 12, cursor: "pointer",
+                    background: colors.bgCard,
+                    border: `1.5px solid ${TEAMS[team].color}33`,
+                    width: "100%", textAlign: "left",
+                    transition: "border-color 0.15s",
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = TEAMS[team].color}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = TEAMS[team].color + "33"}
+                  >
+                    <Avatar player={pid} size={44} />
+                    <div>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: colors.text, fontFamily: "'Oswald', sans-serif" }}>
+                        {p.name}
+                        {p.captain && <span style={{ marginLeft: 6, fontSize: 9, padding: "1px 5px", background: colors.gold + "33", color: colors.gold, borderRadius: 4, fontWeight: 700 }}>CPT</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2, lineHeight: 1.4, maxWidth: 260 }}>
+                        {p.bio.length > 70 ? p.bio.slice(0, 68) + "…" : p.bio}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── APP ────────────────────────────────────────────────────────────────────────
 
 const INITIAL_SCORES = {
@@ -938,6 +1025,21 @@ export default function App() {
   const [selectedHole, setSelectedHole] = useState(0);
   const [scores, setScoresLocal] = useState(INITIAL_SCORES);
   const [loading, setLoading] = useState(true);
+  const [currentPlayer, setCurrentPlayer] = useState(
+    () => localStorage.getItem("pintface_player") || null
+  );
+
+  const currentTeam = currentPlayer ? PLAYERS[currentPlayer].team : null;
+
+  const selectPlayer = (pid) => {
+    localStorage.setItem("pintface_player", pid);
+    setCurrentPlayer(pid);
+  };
+
+  const changePlayer = () => {
+    localStorage.removeItem("pintface_player");
+    setCurrentPlayer(null);
+  };
 
   const scrollRef = useRef(null);
 
@@ -991,7 +1093,7 @@ export default function App() {
         {/* Content */}
         <div ref={scrollRef} style={{ paddingBottom: 80, overflowY: "auto" }}>
           {page === "home" && <HomePage scores={scores} currentHole={currentHole} setPage={setPage} setSelectedHole={setSelectedHole} />}
-          {page === "scoring" && <ScoringPage scores={scores} setScores={setScores} currentHole={currentHole} setCurrentHole={setCurrentHole} resetScores={resetScores} />}
+          {page === "scoring" && <ScoringPage scores={scores} setScores={setScores} currentHole={currentHole} setCurrentHole={setCurrentHole} resetScores={resetScores} currentTeam={currentTeam} currentPlayer={currentPlayer} onChangePlayer={changePlayer} />}
           {loading && page === "scoring" && (
             <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: colors.bg + "cc", zIndex: 99 }}>
               <div style={{ color: colors.gold, fontFamily: "'Oswald', sans-serif", letterSpacing: 2, fontSize: 13 }}>LOADING SCORES…</div>
@@ -1046,6 +1148,7 @@ export default function App() {
           </div>
         </div>
       </div>
+      {!currentPlayer && <PlayerSelectScreen onSelect={selectPlayer} />}
     </>
   );
 }
