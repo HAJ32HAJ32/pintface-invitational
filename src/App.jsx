@@ -10,7 +10,7 @@ const PLAYERS = {
   sozzle: { name: "Sozzle", team: "pigs", captain: false, emoji: "🍺", color: "#F4A940", bio: "Creative scorekeeper. If no one's counting his shots, he's already won. Baby #2 incoming — the hips don't lie." },
   h: { name: "H", team: "pigs", captain: false, emoji: "🤖", color: "#4ECDC4", bio: "Will use AI to calculate every angle, wind speed and power… then top it just off the tee box. Built this app though, so respect." },
   ben: { name: "Ben", team: "happy", captain: true, emoji: "⚡", color: "#5BC0EB", bio: "The Surrey businessman. Single digit handicap, maybe even scratch. Great with his hands. 326 rounds this year. Liquid." },
-  brunners: { name: "Brunners", team: "happy", captain: false, emoji: "🌲", color: "#6A994E", bio: "Tree trunk base, tall levers, and an investment portfolio bigger than his drive. Whether Brunnerz or Matthew shows up is anyone's guess." },
+  brunners: { name: "Brunners", team: "happy", captain: false, emoji: "♿", color: "#6A994E", bio: "Tree trunk base, tall levers, and an investment portfolio bigger than his drive. Whether Brunnerz or Matthew shows up is anyone's guess." },
   flemzo: { name: "Flemzo", team: "happy", captain: false, emoji: "🎩", color: "#9B5DE5", bio: "Swings hard and fast — impressive given most clubs weigh more than him. High heels and a top hat wouldn't slow him down." },
   shlid: { name: "Shlid", team: "happy", captain: false, emoji: "🏎️", color: "#F72585", bio: "Buggy menace. Pubic hair architect. Moving to Worthing and taking everyone's shins with him. The reverse R9 lives on." },
 };
@@ -229,9 +229,47 @@ function SectionTitle({ children, icon }) {
   );
 }
 
+// ─── SCORING HELPERS ────────────────────────────────────────────────────────────
+
+function calcMatchResult(results) {
+  let pigs = 0, happy = 0;
+  for (let h = 10; h <= 18; h++) {
+    if (results[h] === "pigs") pigs++;
+    else if (results[h] === "happy") happy++;
+  }
+  const diff = pigs - happy;
+  const holesPlayed = Object.keys(results).filter(k => +k >= 10).length;
+  const allDone = holesPlayed >= 9;
+  const leader = diff > 0 ? "pigs" : diff < 0 ? "happy" : null;
+  return { pigs, happy, diff: Math.abs(diff), leader, allDone, holesPlayed };
+}
+
+function calcPoints(scores) {
+  const f9p = Object.values(scores.scramble.pigs).reduce((a, b) => a + b, 0);
+  const f9h = Object.values(scores.scramble.happy).reduce((a, b) => a + b, 0);
+  const front9 = f9p === 0 && f9h === 0 ? null
+    : f9p < f9h ? { pigs: 1, happy: 0 }
+    : f9h < f9p ? { pigs: 0, happy: 1 }
+    : { pigs: 0.5, happy: 0.5 };
+
+  const matches = scores.matchPlay.map(r => {
+    const m = calcMatchResult(r);
+    if (!m.allDone) return null;
+    return m.leader === "pigs" ? { pigs: 1, happy: 0 }
+      : m.leader === "happy" ? { pigs: 0, happy: 1 }
+      : { pigs: 0.5, happy: 0.5 };
+  });
+
+  const total = {
+    pigs: (front9?.pigs ?? 0) + (matches[0]?.pigs ?? 0) + (matches[1]?.pigs ?? 0),
+    happy: (front9?.happy ?? 0) + (matches[0]?.happy ?? 0) + (matches[1]?.happy ?? 0),
+  };
+  return { front9, matches, total };
+}
+
 // ─── PAGES ──────────────────────────────────────────────────────────────────────
 
-function HomePage({ scores, currentHole, setPage, setSelectedHole }) {
+function HomePage({ scores, currentHole, setPage, setSelectedHole, onShowResults }) {
   const front9Pigs = HOLES.slice(0, 9).reduce((sum, h) => sum + (scores.scramble.pigs[h.num] || 0), 0);
   const front9Happy = HOLES.slice(0, 9).reduce((sum, h) => sum + (scores.scramble.happy[h.num] || 0), 0);
   const front9PigsPar = HOLES.slice(0, 9).reduce((s, h) => s + (scores.scramble.pigs[h.num] > 0 ? h.par : 0), 0);
@@ -239,8 +277,23 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole }) {
   const front9PigsDiff = front9Pigs > 0 ? front9Pigs - front9PigsPar : null;
   const front9HappyDiff = front9Happy > 0 ? front9Happy - front9HappyPar : null;
 
-  const match1Score = { up: 0, team: null };
-  const match2Score = { up: 0, team: null };
+  const match1 = calcMatchResult(scores.matchPlay[0] || {});
+  const match2 = calcMatchResult(scores.matchPlay[1] || {});
+  const points = calcPoints(scores);
+
+  const matchStatusLabel = (m, idx) => {
+    const p1 = scores.matchPairings?.[idx];
+    if (!p1) return "Pairings not set";
+    if (m.holesPlayed === 0) return "Not started";
+    if (m.allDone) {
+      if (!m.leader) return "Halved";
+      return `${TEAMS[m.leader].short} win ${m.leader === "pigs" ? m.pigs : m.happy}–${m.leader === "pigs" ? m.happy : m.pigs}`;
+    }
+    if (!m.leader) return `All Square (${m.holesPlayed} played)`;
+    return `${TEAMS[m.leader].short} ${m.diff}UP (${m.holesPlayed} played)`;
+  };
+
+  const fmtPts = (n) => n === null || n === undefined ? "–" : n % 1 === 0 ? String(n) : "½";
 
   const hole = HOLES[currentHole - 1];
 
@@ -315,6 +368,67 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole }) {
         </div>
       </Card>
 
+      {/* Back 9 Match Play */}
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 9, letterSpacing: 2.5, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 12 }}>
+          Back 9 — Match Play
+        </div>
+        {[match1, match2].map((m, idx) => {
+          const pairings = scores.matchPairings?.[idx];
+          const leaderColor = m.leader ? TEAMS[m.leader].color : colors.gold;
+          return (
+            <div key={idx} style={{ marginBottom: idx === 0 ? 10 : 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: "'Oswald', sans-serif", letterSpacing: 1 }}>
+                  Match {idx + 1}{pairings ? ` · ${pairings.pigs.map(p => PLAYERS[p].name.split(" ")[0]).join("/")} vs ${pairings.happy.map(p => PLAYERS[p].name.split(" ")[0]).join("/")}` : ""}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: leaderColor, fontFamily: "'Oswald', sans-serif" }}>
+                  {matchStatusLabel(m, idx)}
+                </div>
+              </div>
+              {idx === 0 && <div style={{ height: 1, background: colors.greenLight + "15", margin: "8px 0" }} />}
+            </div>
+          );
+        })}
+      </Card>
+
+      {/* Overall Points */}
+      <Card style={{ marginBottom: 12, background: `linear-gradient(135deg, ${colors.bgCard} 0%, ${colors.greenDark} 100%)` }}>
+        <div style={{ fontSize: 9, letterSpacing: 2.5, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 12 }}>
+          Overall Standings
+        </div>
+        {[
+          { label: "Front 9 (Scramble)", pts: points.front9 },
+          { label: "Match 1", pts: points.matches[0] },
+          { label: "Match 2", pts: points.matches[1] },
+        ].map(({ label, pts }, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, color: colors.textDim, fontFamily: "'Oswald', sans-serif" }}>{label}</div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: pts?.pigs > pts?.happy ? TEAMS.pigs.color : colors.textMuted, fontFamily: "'Oswald', sans-serif", minWidth: 16, textAlign: "right" }}>{pts ? fmtPts(pts.pigs) : "–"}</span>
+              <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: "'Oswald', sans-serif" }}>–</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: pts?.happy > pts?.pigs ? TEAMS.happy.color : colors.textMuted, fontFamily: "'Oswald', sans-serif", minWidth: 16 }}>{pts ? fmtPts(pts.happy) : "–"}</span>
+            </div>
+          </div>
+        ))}
+        <div style={{ height: 1, background: colors.gold + "33", margin: "8px 0" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: colors.gold, fontFamily: "'Oswald', sans-serif", letterSpacing: 1 }}>TOTAL</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ fontSize: 18, fontWeight: 700, color: points.total.pigs > points.total.happy ? TEAMS.pigs.color : colors.text, fontFamily: "'Oswald', sans-serif", minWidth: 20, textAlign: "right" }}>{fmtPts(points.total.pigs)}</span>
+            <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: "'Oswald', sans-serif" }}>–</span>
+            <span style={{ fontSize: 18, fontWeight: 700, color: points.total.happy > points.total.pigs ? TEAMS.happy.color : colors.text, fontFamily: "'Oswald', sans-serif", minWidth: 20 }}>{fmtPts(points.total.happy)}</span>
+          </div>
+        </div>
+        {scores.finalized && (
+          <button onClick={onShowResults} style={{
+            width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 8, cursor: "pointer",
+            background: colors.gold, border: "none",
+            color: colors.bg, fontSize: 13, fontWeight: 700, fontFamily: "'Oswald', sans-serif", letterSpacing: 1.5,
+          }}>VIEW FINAL RESULTS →</button>
+        )}
+      </Card>
+
       {/* Current Hole */}
       <Card style={{ marginBottom: 12, cursor: "pointer" }} onClick={() => { setSelectedHole(currentHole - 1); setPage("holes"); }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -377,6 +491,7 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole }) {
 function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScores, currentTeam, currentPlayer, onChangePlayer }) {
   const hole = HOLES[currentHole - 1];
   const isBack9 = currentHole > 9;
+  const [showFinalise, setShowFinalise] = useState(false);
 
   const updateScore = (team, value) => {
     if (!isBack9) {
@@ -667,6 +782,18 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
         );
       })()}
 
+      {/* Finalise Scores — hole 18 only */}
+      {currentHole === 18 && !scores.finalized && (
+        <div style={{ marginTop: 16 }}>
+          <button onClick={() => setShowFinalise(true)} style={{
+            width: "100%", padding: 14, borderRadius: 10, cursor: "pointer",
+            background: `linear-gradient(135deg, ${colors.gold} 0%, ${colors.goldLight} 100%)`,
+            border: "none", color: colors.bg, fontSize: 14, fontWeight: 700,
+            fontFamily: "'Oswald', sans-serif", letterSpacing: 2, textTransform: "uppercase",
+          }}>Finalise Scores →</button>
+        </div>
+      )}
+
       {/* Reset Scores — hidden at bottom */}
       <div style={{ marginTop: 40, paddingBottom: 8, textAlign: "center" }}>
         <button onClick={resetScores} style={{
@@ -676,6 +803,15 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
           letterSpacing: 1.5, textTransform: "uppercase", opacity: 0.4,
         }}>Reset Scores</button>
       </div>
+
+      {showFinalise && (
+        <FinalScoresOverlay
+          scores={scores}
+          setScores={setScores}
+          currentTeam={currentTeam}
+          onClose={() => setShowFinalise(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1099,6 +1235,222 @@ function TeeShotPicker({ players, selected, onSelect, teamColor, counts, minRequ
   );
 }
 
+// ─── FINAL SCORES OVERLAY ───────────────────────────────────────────────────────
+
+function PointsTable({ points, compact = false }) {
+  const fmtPts = (n) => (n === null || n === undefined) ? "–" : n % 1 === 0 ? String(n) : "½";
+  const rows = [
+    { label: "Front 9 (Scramble)", pts: points.front9 },
+    { label: "Match 1", pts: points.matches[0] },
+    { label: "Match 2", pts: points.matches[1] },
+  ];
+  return (
+    <div>
+      {rows.map(({ label, pts }, i) => (
+        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: compact ? 4 : 6 }}>
+          <div style={{ fontSize: compact ? 10 : 11, color: colors.textDim, fontFamily: "'Oswald', sans-serif" }}>{label}</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ fontSize: compact ? 11 : 13, fontWeight: 700, color: pts?.pigs > pts?.happy ? TEAMS.pigs.color : colors.textMuted, fontFamily: "'Oswald', sans-serif", minWidth: 14, textAlign: "right" }}>{pts ? fmtPts(pts.pigs) : "–"}</span>
+            <span style={{ fontSize: 9, color: colors.textMuted }}>–</span>
+            <span style={{ fontSize: compact ? 11 : 13, fontWeight: 700, color: pts?.happy > pts?.pigs ? TEAMS.happy.color : colors.textMuted, fontFamily: "'Oswald', sans-serif", minWidth: 14 }}>{pts ? fmtPts(pts.happy) : "–"}</span>
+          </div>
+        </div>
+      ))}
+      <div style={{ height: 1, background: colors.gold + "33", margin: `${compact ? 6 : 8}px 0` }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: compact ? 11 : 13, fontWeight: 700, color: colors.gold, fontFamily: "'Oswald', sans-serif", letterSpacing: 1 }}>TOTAL</div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span style={{ fontSize: compact ? 15 : 18, fontWeight: 700, color: points.total.pigs > points.total.happy ? TEAMS.pigs.color : colors.text, fontFamily: "'Oswald', sans-serif", minWidth: 18, textAlign: "right" }}>{fmtPts(points.total.pigs)}</span>
+          <span style={{ fontSize: 10, color: colors.textMuted }}>–</span>
+          <span style={{ fontSize: compact ? 15 : 18, fontWeight: 700, color: points.total.happy > points.total.pigs ? TEAMS.happy.color : colors.text, fontFamily: "'Oswald', sans-serif", minWidth: 18 }}>{fmtPts(points.total.happy)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FinalScoresOverlay({ scores, setScores, currentTeam, onClose }) {
+  const points = calcPoints(scores);
+  const confs = scores.confirmations || { pigs: false, happy: false };
+  const bothConfirmed = confs.pigs && confs.happy;
+
+  const front9Pigs = HOLES.slice(0, 9).reduce((s, h) => s + (scores.scramble.pigs[h.num] || 0), 0);
+  const front9Happy = HOLES.slice(0, 9).reduce((s, h) => s + (scores.scramble.happy[h.num] || 0), 0);
+  const front9PigsPar = HOLES.slice(0, 9).reduce((s, h) => s + (scores.scramble.pigs[h.num] > 0 ? h.par : 0), 0);
+  const front9HappyPar = HOLES.slice(0, 9).reduce((s, h) => s + (scores.scramble.happy[h.num] > 0 ? h.par : 0), 0);
+
+  const confirm = () => {
+    if (!currentTeam) {
+      setScores(prev => ({ ...prev, confirmations: { pigs: true, happy: true }, finalized: true }));
+      onClose();
+      return;
+    }
+    setScores(prev => {
+      const nextConfs = { ...(prev.confirmations || { pigs: false, happy: false }), [currentTeam]: true };
+      const nowBoth = nextConfs.pigs && nextConfs.happy;
+      return { ...prev, confirmations: nextConfs, finalized: nowBoth };
+    });
+  };
+
+  const hasConfirmed = currentTeam ? confs[currentTeam] : false;
+  const otherTeam = currentTeam === "pigs" ? "happy" : "pigs";
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 300,
+      background: "rgba(10,26,15,0.96)",
+      display: "flex", flexDirection: "column",
+      overflowY: "auto", padding: "24px 16px 40px",
+    }}>
+      <button onClick={onClose} style={{
+        alignSelf: "flex-end", marginBottom: 8,
+        background: "none", border: `1px solid ${colors.textMuted}44`,
+        borderRadius: 8, padding: "4px 10px", cursor: "pointer",
+        color: colors.textMuted, fontSize: 18, lineHeight: 1,
+      }}>✕</button>
+
+      <div style={{ fontSize: 9, letterSpacing: 3, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", textAlign: "center", marginBottom: 4 }}>
+        Final Scores
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 700, color: colors.gold, fontFamily: "'Oswald', sans-serif", textAlign: "center", marginBottom: 20 }}>
+        Review & Confirm
+      </div>
+
+      {/* Front 9 Scramble */}
+      <div style={{ background: colors.bgCard, borderRadius: 12, padding: 14, marginBottom: 10 }}>
+        <div style={{ fontSize: 9, letterSpacing: 2, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 10 }}>Front 9 — Texas Scramble</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          {["pigs", "happy"].map(team => {
+            const score = team === "pigs" ? front9Pigs : front9Happy;
+            const par = team === "pigs" ? front9PigsPar : front9HappyPar;
+            const diff = score > 0 ? score - par : null;
+            const isWinner = team === "pigs" ? front9Pigs < front9Happy : front9Happy < front9Pigs;
+            return (
+              <div key={team} style={{ textAlign: "center", flex: 1, opacity: front9Pigs > 0 && front9Happy > 0 && !isWinner ? 0.5 : 1 }}>
+                <TeamBadge team={team} size="md" />
+                <div style={{ fontSize: 32, fontWeight: 700, color: isWinner ? TEAMS[team].color : colors.white, fontFamily: "'Oswald', sans-serif", lineHeight: 1, marginTop: 4 }}>{score || "–"}</div>
+                {diff !== null && <div style={{ fontSize: 11, color: diff > 0 ? colors.danger : colors.accent, fontFamily: "'Oswald', sans-serif" }}>{diff > 0 ? "+" : ""}{diff}</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Back 9 Match Play */}
+      <div style={{ background: colors.bgCard, borderRadius: 12, padding: 14, marginBottom: 10 }}>
+        <div style={{ fontSize: 9, letterSpacing: 2, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 10 }}>Back 9 — Match Play</div>
+        {[0, 1].map(idx => {
+          const m = calcMatchResult(scores.matchPlay[idx] || {});
+          const pairings = scores.matchPairings?.[idx];
+          const leaderColor = m.leader ? TEAMS[m.leader].color : colors.gold;
+          const label = m.allDone
+            ? m.leader ? `${TEAMS[m.leader].name} win ${m.leader === "pigs" ? m.pigs : m.happy}–${m.leader === "pigs" ? m.happy : m.pigs}` : "Halved"
+            : m.leader ? `${TEAMS[m.leader].short} ${m.diff}UP` : "All Square";
+          return (
+            <div key={idx} style={{ marginBottom: idx === 0 ? 8 : 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: "'Oswald', sans-serif" }}>
+                  Match {idx + 1}{pairings ? ` · ${pairings.pigs.map(p => PLAYERS[p].name.split(" ")[0]).join("/")} vs ${pairings.happy.map(p => PLAYERS[p].name.split(" ")[0]).join("/")}` : ""}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: leaderColor, fontFamily: "'Oswald', sans-serif" }}>{label}</div>
+              </div>
+              {idx === 0 && <div style={{ height: 1, background: colors.greenLight + "15", margin: "6px 0" }} />}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Points */}
+      <div style={{ background: colors.bgCard, borderRadius: 12, padding: 14, marginBottom: 20 }}>
+        <div style={{ fontSize: 9, letterSpacing: 2, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 10 }}>Overall Points</div>
+        <PointsTable points={points} />
+      </div>
+
+      {/* Confirmation CTA */}
+      {bothConfirmed ? (
+        <button onClick={() => { setScores(prev => ({ ...prev, finalized: true })); onClose(); }} style={{
+          width: "100%", padding: 14, borderRadius: 10, cursor: "pointer",
+          background: colors.gold, border: "none",
+          color: colors.bg, fontSize: 14, fontWeight: 700,
+          fontFamily: "'Oswald', sans-serif", letterSpacing: 2, textTransform: "uppercase",
+        }}>See Results →</button>
+      ) : currentTeam && hasConfirmed ? (
+        <div style={{ textAlign: "center", padding: 14, borderRadius: 10, background: colors.bgCard, border: `1px solid ${colors.greenLight}22` }}>
+          <div style={{ fontSize: 12, color: colors.textDim, fontFamily: "'Oswald', sans-serif" }}>Waiting for</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: TEAMS[otherTeam].color, fontFamily: "'Oswald', sans-serif", marginTop: 2 }}>{TEAMS[otherTeam].name} to confirm…</div>
+        </div>
+      ) : (
+        <button onClick={confirm} style={{
+          width: "100%", padding: 14, borderRadius: 10, cursor: "pointer",
+          background: currentTeam ? TEAMS[currentTeam].color : colors.gold,
+          border: "none", color: "#fff", fontSize: 14, fontWeight: 700,
+          fontFamily: "'Oswald', sans-serif", letterSpacing: 1.5, textTransform: "uppercase",
+        }}>
+          {currentTeam ? `Confirm as ${TEAMS[currentTeam].name}` : "Finalise Scores"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── WINNING MODAL ───────────────────────────────────────────────────────────────
+
+function WinningModal({ scores, onClose }) {
+  const points = calcPoints(scores);
+  const { pigs, happy } = points.total;
+  const winner = pigs > happy ? "pigs" : happy > pigs ? "happy" : null;
+  const winnerTeam = winner ? TEAMS[winner] : null;
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 400,
+      background: "rgba(10,26,15,0.97)",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "center", padding: 24, overflowY: "auto",
+    }}>
+      <button onClick={onClose} style={{
+        position: "absolute", top: 16, right: 16,
+        background: "none", border: `1px solid ${colors.textMuted}44`,
+        borderRadius: 8, padding: "4px 10px", cursor: "pointer",
+        color: colors.textMuted, fontSize: 18, lineHeight: 1,
+      }}>✕</button>
+
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <div style={{ fontSize: 52, marginBottom: 8 }}>
+          {winner ? (winner === "pigs" ? "🐷" : "😄") : "🤝"}
+        </div>
+        <div style={{
+          fontSize: 36, fontWeight: 700, fontFamily: "'Oswald', sans-serif",
+          letterSpacing: 3, textTransform: "uppercase",
+          background: winner
+            ? `linear-gradient(135deg, ${winnerTeam.color} 0%, ${winnerTeam.colorLight || winnerTeam.color} 100%)`
+            : `linear-gradient(135deg, ${colors.goldLight} 0%, ${colors.gold} 100%)`,
+          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+        }}>
+          {winner ? `${winnerTeam.name} Win!` : "It's a Tie!"}
+        </div>
+        <div style={{ fontSize: 13, color: colors.textDim, fontFamily: "'Oswald', sans-serif", marginTop: 6, letterSpacing: 1 }}>
+          {winner ? `${pigs}–${happy} on points` : `${pigs}–${happy} — all to play for`}
+        </div>
+      </div>
+
+      <div style={{ width: "100%", maxWidth: 340, background: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 24 }}>
+        <div style={{ fontSize: 9, letterSpacing: 2, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>
+          Final Points
+        </div>
+        <PointsTable points={points} />
+      </div>
+
+      <button onClick={onClose} style={{
+        padding: "12px 32px", borderRadius: 10, cursor: "pointer",
+        background: "none", border: `1px solid ${colors.gold}44`,
+        color: colors.gold, fontSize: 13, fontWeight: 600,
+        fontFamily: "'Oswald', sans-serif", letterSpacing: 1.5, textTransform: "uppercase",
+      }}>Close</button>
+    </div>
+  );
+}
+
 // ─── PAR TO PINTS ───────────────────────────────────────────────────────────────
 
 const WHEEL_SEGMENTS = [
@@ -1375,6 +1727,8 @@ const INITIAL_SCORES = {
   },
   matchPlay: [{}, {}],
   matchPairings: [null, null],
+  confirmations: { pigs: false, happy: false },
+  finalized: false,
   parToPints: {
     triggered: false,
     nominatedTeam: null,
@@ -1392,6 +1746,7 @@ export default function App() {
   const [selectedHole, setSelectedHole] = useState(0);
   const [scores, setScoresLocal] = useState(INITIAL_SCORES);
   const [loading, setLoading] = useState(true);
+  const [showWinning, setShowWinning] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState(
     () => localStorage.getItem("pintface_player") || null
   );
@@ -1442,6 +1797,10 @@ export default function App() {
     if (scrollRef.current) scrollRef.current.scrollTo(0, 0);
   }, [page]);
 
+  useEffect(() => {
+    if (scores.finalized) setShowWinning(true);
+  }, [scores.finalized]);
+
   return (
     <>
       <style>{`
@@ -1459,7 +1818,7 @@ export default function App() {
       }}>
         {/* Content */}
         <div ref={scrollRef} style={{ paddingBottom: 80, overflowY: "auto" }}>
-          {page === "home" && <HomePage scores={scores} currentHole={currentHole} setPage={setPage} setSelectedHole={setSelectedHole} />}
+          {page === "home" && <HomePage scores={scores} currentHole={currentHole} setPage={setPage} setSelectedHole={setSelectedHole} onShowResults={() => setShowWinning(true)} />}
           {page === "scoring" && <ScoringPage scores={scores} setScores={setScores} currentHole={currentHole} setCurrentHole={setCurrentHole} resetScores={resetScores} currentTeam={currentTeam} currentPlayer={currentPlayer} onChangePlayer={changePlayer} />}
           {loading && page === "scoring" && (
             <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: colors.bg + "cc", zIndex: 99 }}>
@@ -1518,6 +1877,9 @@ export default function App() {
       {!currentPlayer && <PlayerSelectScreen onSelect={selectPlayer} />}
       {scores.parToPints?.triggered && !scores.parToPints?.dismissed && (
         <ParToPintsOverlay scores={scores} setScores={setScores} currentTeam={currentTeam} />
+      )}
+      {showWinning && scores.finalized && (
+        <WinningModal scores={scores} onClose={() => setShowWinning(false)} />
       )}
     </>
   );
