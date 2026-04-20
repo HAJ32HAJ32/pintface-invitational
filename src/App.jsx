@@ -794,15 +794,17 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
         </div>
       )}
 
-      {/* Reset Scores — hidden at bottom */}
-      <div style={{ marginTop: 40, paddingBottom: 8, textAlign: "center" }}>
-        <button onClick={resetScores} style={{
-          background: "none", border: `1px solid ${colors.textMuted}33`,
-          borderRadius: 8, padding: "6px 16px", cursor: "pointer",
-          color: colors.textMuted, fontSize: 10, fontFamily: "'Oswald', sans-serif",
-          letterSpacing: 1.5, textTransform: "uppercase", opacity: 0.4,
-        }}>Reset Scores</button>
-      </div>
+      {/* Reset Scores — only for H or Moon */}
+      {(currentPlayer === "h" || currentPlayer === "moon") && (
+        <div style={{ marginTop: 40, paddingBottom: 8, textAlign: "center" }}>
+          <button onClick={resetScores} style={{
+            background: "none", border: `1px solid ${colors.textMuted}33`,
+            borderRadius: 8, padding: "6px 16px", cursor: "pointer",
+            color: colors.textMuted, fontSize: 10, fontFamily: "'Oswald', sans-serif",
+            letterSpacing: 1.5, textTransform: "uppercase", opacity: 0.4,
+          }}>Reset Scores</button>
+        </div>
+      )}
 
       {showFinalise && (
         <FinalScoresOverlay
