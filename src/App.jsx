@@ -293,7 +293,7 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole, onShowResults
     return `${TEAMS[m.leader].short} ${m.diff}UP (${m.holesPlayed} played)`;
   };
 
-  const fmtPts = (n) => n === null || n === undefined ? "–" : n % 1 === 0 ? String(n) : "½";
+  const fmtPts = (n) => { if (n === null || n === undefined) return "–"; if (n % 1 === 0) return String(n); const w = Math.floor(n); return w === 0 ? "½" : `${w}½`; };
 
   const hole = HOLES[currentHole - 1];
 
@@ -539,6 +539,27 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
     }, {});
   };
 
+  const getHoleCircleStyle = (hNum) => {
+    if (hNum === currentHole) return { bg: colors.gold, border: colors.gold, text: colors.bg };
+    if (hNum <= 9) {
+      const p = scores.scramble.pigs[hNum] > 0;
+      const hp = scores.scramble.happy[hNum] > 0;
+      if (p && hp) return { bg: "#4CAF5040", border: "#4CAF50", text: "#4CAF50" };
+      if (p) return { bg: TEAMS.pigs.color + "30", border: TEAMS.pigs.color + "88", text: TEAMS.pigs.color };
+      if (hp) return { bg: TEAMS.happy.color + "30", border: TEAMS.happy.color + "88", text: TEAMS.happy.color };
+    } else {
+      const r0 = scores.matchPlay[0]?.[hNum];
+      const r1 = scores.matchPlay[1]?.[hNum];
+      if (r0 || r1) {
+        const winner = r0 === r1 ? r0 : (r0 && !r1 ? r0 : (!r0 && r1 ? r1 : "halved"));
+        if (winner === "pigs") return { bg: TEAMS.pigs.color + "30", border: TEAMS.pigs.color + "88", text: TEAMS.pigs.color };
+        if (winner === "happy") return { bg: TEAMS.happy.color + "30", border: TEAMS.happy.color + "88", text: TEAMS.happy.color };
+        return { bg: colors.gold + "30", border: colors.gold + "88", text: colors.gold };
+      }
+    }
+    return { bg: colors.bgCard, border: colors.greenLight + "22", text: colors.textDim };
+  };
+
   return (
     <div style={{ padding: "0 16px 100px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 4px" }}>
@@ -561,27 +582,30 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
       </div>
 
       {/* Hole Selector */}
-      <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 12, marginBottom: 16, msOverflowStyle: "none", scrollbarWidth: "none" }}>
-        {HOLES.map((h, i) => (
-          <button key={i} onClick={() => setCurrentHole(h.num)} style={{
-            minWidth: 36, height: 36, borderRadius: 8,
-            background: currentHole === h.num ? colors.gold : colors.bgCard,
-            border: `1px solid ${currentHole === h.num ? colors.gold : colors.greenLight + "22"}`,
-            color: currentHole === h.num ? colors.bg : colors.textDim,
-            fontWeight: 700, fontSize: 13, cursor: "pointer",
-            fontFamily: "'Oswald', sans-serif",
-            position: "relative",
-          }}>
-            {h.num}
-            {h.challenge && (
-              <span style={{
-                position: "absolute", top: -3, right: -3,
-                width: 8, height: 8, borderRadius: "50%",
-                background: CHALLENGE_INFO[h.challenge].color,
-              }} />
-            )}
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center", paddingBottom: 12, marginBottom: 16 }}>
+        {HOLES.map((h, i) => {
+          const cs = getHoleCircleStyle(h.num);
+          return (
+            <button key={i} onClick={() => setCurrentHole(h.num)} style={{
+              width: 30, height: 30, borderRadius: "50%",
+              background: cs.bg,
+              border: `1.5px solid ${cs.border}`,
+              color: cs.text,
+              fontWeight: 700, fontSize: 12, cursor: "pointer",
+              fontFamily: "'Oswald', sans-serif",
+              position: "relative", flexShrink: 0,
+            }}>
+              {h.num}
+              {h.challenge && (
+                <span style={{
+                  position: "absolute", top: -2, right: -2,
+                  width: 7, height: 7, borderRadius: "50%",
+                  background: CHALLENGE_INFO[h.challenge].color,
+                }} />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Hole Info Bar */}
@@ -1240,7 +1264,7 @@ function TeeShotPicker({ players, selected, onSelect, teamColor, counts, minRequ
 // ─── FINAL SCORES OVERLAY ───────────────────────────────────────────────────────
 
 function PointsTable({ points, compact = false }) {
-  const fmtPts = (n) => (n === null || n === undefined) ? "–" : n % 1 === 0 ? String(n) : "½";
+  const fmtPts = (n) => { if (n === null || n === undefined) return "–"; if (n % 1 === 0) return String(n); const w = Math.floor(n); return w === 0 ? "½" : `${w}½`; };
   const rows = [
     { label: "Front 9 (Scramble)", pts: points.front9 },
     { label: "Match 1", pts: points.matches[0] },
