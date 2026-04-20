@@ -415,27 +415,10 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
     }));
   };
 
-  const updateMatchPlayTeeShot = (matchIdx, team, playerId) => {
-    setScores(prev => {
-      const mp = [...(prev.teeShotUsed?.matchPlay || [{pigs:{},happy:{}},{pigs:{},happy:{}}])];
-      mp[matchIdx] = { ...mp[matchIdx], [team]: { ...mp[matchIdx][team], [currentHole]: playerId } };
-      return { ...prev, teeShotUsed: { ...prev.teeShotUsed, matchPlay: mp } };
-    });
-  };
-
   // Tally helpers
   const scrambleTeeShots = (team) => {
     const used = scores.teeShotUsed?.scramble?.[team] || {};
     return TEAMS[team].members.reduce((acc, pid) => {
-      acc[pid] = Object.values(used).filter(v => v === pid).length;
-      return acc;
-    }, {});
-  };
-
-  const matchPlayTeeShots = (matchIdx, team) => {
-    const used = scores.teeShotUsed?.matchPlay?.[matchIdx]?.[team] || {};
-    const players = scores.matchPairings?.[matchIdx]?.[team] || [];
-    return players.reduce((acc, pid) => {
       acc[pid] = Object.values(used).filter(v => v === pid).length;
       return acc;
     }, {});
@@ -633,21 +616,6 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
                       );
                     })}
                   </div>
-                  {["pigs", "happy"].map(teamSide => {
-                    if (currentTeam && currentTeam !== teamSide) return null;
-                    return (
-                      <TeeShotPicker
-                        key={teamSide}
-                        players={scores.matchPairings[matchIdx][teamSide]}
-                        selected={scores.teeShotUsed?.matchPlay?.[matchIdx]?.[teamSide]?.[currentHole] || null}
-                        onSelect={currentTeam === teamSide ? (pid) => updateMatchPlayTeeShot(matchIdx, teamSide, pid) : null}
-                        teamColor={TEAMS[teamSide].color}
-                        counts={matchPlayTeeShots(matchIdx, teamSide)}
-                        minRequired={3}
-                        currentHole={currentHole}
-                      />
-                    );
-                  })}
                 </>
               ) : (
                 <button onClick={() => {}} style={{
@@ -668,21 +636,36 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
       )}
 
       {/* Nav */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20, gap: 12 }}>
-        <button onClick={() => setCurrentHole(Math.max(1, currentHole - 1))} disabled={currentHole === 1} style={{
-          flex: 1, padding: 12, borderRadius: 10, cursor: currentHole === 1 ? "default" : "pointer",
-          background: colors.bgCard, border: `1px solid ${colors.greenLight}22`,
-          color: currentHole === 1 ? colors.textMuted : colors.text,
-          fontSize: 13, fontWeight: 600, fontFamily: "'Oswald', sans-serif",
-          opacity: currentHole === 1 ? 0.4 : 1,
-        }}>‹ Prev</button>
-        <button onClick={() => setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18} style={{
-          flex: 1, padding: 12, borderRadius: 10, cursor: currentHole === 18 ? "default" : "pointer",
-          background: colors.gold, border: "none",
-          color: colors.bg, fontSize: 13, fontWeight: 700, fontFamily: "'Oswald', sans-serif",
-          opacity: currentHole === 18 ? 0.4 : 1,
-        }}>Next ›</button>
-      </div>
+      {(() => {
+        const teeShotAttributed = !currentTeam || !!scores.teeShotUsed?.scramble?.[currentTeam]?.[currentHole];
+        const canAdvance = isBack9 || teeShotAttributed;
+        return (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20, gap: 12 }}>
+              <button onClick={() => setCurrentHole(Math.max(1, currentHole - 1))} disabled={currentHole === 1} style={{
+                flex: 1, padding: 12, borderRadius: 10, cursor: currentHole === 1 ? "default" : "pointer",
+                background: colors.bgCard, border: `1px solid ${colors.greenLight}22`,
+                color: currentHole === 1 ? colors.textMuted : colors.text,
+                fontSize: 13, fontWeight: 600, fontFamily: "'Oswald', sans-serif",
+                opacity: currentHole === 1 ? 0.4 : 1,
+              }}>‹ Prev</button>
+              <button onClick={() => canAdvance && setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18 || !canAdvance} style={{
+                flex: 1, padding: 12, borderRadius: 10, cursor: (currentHole === 18 || !canAdvance) ? "default" : "pointer",
+                background: canAdvance ? colors.gold : colors.bgCard,
+                border: canAdvance ? "none" : `1px solid ${colors.greenLight}22`,
+                color: canAdvance ? colors.bg : colors.textMuted,
+                fontSize: 13, fontWeight: 700, fontFamily: "'Oswald', sans-serif",
+                opacity: (currentHole === 18 || !canAdvance) ? 0.4 : 1,
+              }}>Next ›</button>
+            </div>
+            {!canAdvance && (
+              <div style={{ textAlign: "center", marginTop: 8, fontSize: 10, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", letterSpacing: 1.5, textTransform: "uppercase" }}>
+                Select tee shot to continue
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Reset Scores — hidden at bottom */}
       <div style={{ marginTop: 40, paddingBottom: 8, textAlign: "center" }}>
@@ -1079,11 +1062,15 @@ function TeeShotPicker({ players, selected, onSelect, teamColor, counts, minRequ
       <div style={{ fontSize: 8, letterSpacing: 2, color: teamColor, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 8 }}>
         Tee Shot Used
       </div>
-      {/* Player picker buttons */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {players.map(pid => {
           const p = PLAYERS[pid];
           const isSelected = selected === pid;
+          const count = counts[pid] || 0;
+          const atRisk = holesLeft < (minRequired - count) && count < minRequired;
+          const done = count >= minRequired;
+          const countColor = done ? "#4ECDC4" : atRisk ? "#F4A940" : teamColor;
+          const countLabel = done ? `${count} ✓` : atRisk ? `${count} !` : `${count}/${minRequired}`;
           return (
             <button
               key={pid}
@@ -1100,25 +1087,11 @@ function TeeShotPicker({ players, selected, onSelect, teamColor, counts, minRequ
             >
               <span style={{ fontSize: 13 }}>{p.emoji}</span>
               {p.name}
+              <span style={{
+                fontSize: 9, fontWeight: 700, color: done ? "#4ECDC4" : atRisk ? "#F4A940" : (isSelected ? "#fff" : teamColor),
+                opacity: 0.85, marginLeft: 2,
+              }}>{countLabel}</span>
             </button>
-          );
-        })}
-      </div>
-      {/* Running tally */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {players.map(pid => {
-          const count = counts[pid] || 0;
-          const atRisk = holesLeft < (minRequired - count) && count < minRequired;
-          const done = count >= minRequired;
-          const badgeColor = done ? "#4ECDC4" : atRisk ? "#F4A940" : teamColor;
-          return (
-            <span key={pid} style={{
-              fontSize: 10, padding: "2px 8px", borderRadius: 10,
-              background: badgeColor + "22", border: `1px solid ${badgeColor}44`,
-              color: badgeColor, fontFamily: "'Oswald', sans-serif", fontWeight: 600,
-            }}>
-              {PLAYERS[pid].name}: {count}{done ? " ✓" : atRisk ? " !" : `/${minRequired}`}
-            </span>
           );
         })}
       </div>
@@ -1140,7 +1113,7 @@ const WHEEL_SEGMENTS = [
 ];
 
 // Segment centres (degrees): Beer=22.5,112.5,202.5,292.5 | Mini=67.5,157.5,247.5,337.5
-const SPIN_TARGET = { beer: 5 * 360 + 22.5, miniature: 5 * 360 + 67.5 };
+const SPIN_TARGET = { beer: 5 * 360 + 67.5, miniature: 5 * 360 + 22.5 };
 
 function ParToPintsOverlay({ scores, setScores, currentTeam }) {
   const { nominatedTeam, spinResult } = scores.parToPints || {};
