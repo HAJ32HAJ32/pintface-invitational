@@ -11,8 +11,8 @@ const PLAYERS = {
   h: { name: "H", team: "pigs", captain: false, emoji: "🤖", color: "#4ECDC4", bio: "Will use AI to calculate every angle, wind speed and power… then top it just off the tee box. Built this app though, so respect." },
   ben: { name: "Ben", team: "happy", captain: true, emoji: "⚡", color: "#5BC0EB", bio: "The Surrey businessman. Single digit handicap, maybe even scratch. Great with his hands. 326 rounds this year. Liquid." },
   brunners: { name: "Brunners", team: "happy", captain: false, emoji: "♿", color: "#6A994E", bio: "Tree trunk base, tall levers, and an investment portfolio bigger than his drive. Whether Brunnerz or Matthew shows up is anyone's guess." },
-  flemzo: { name: "Flemzo", team: "happy", captain: false, emoji: "🎩", color: "#9B5DE5", bio: "Swings hard and fast — impressive given most clubs weigh more than him. High heels and a top hat wouldn't slow him down." },
-  shlid: { name: "Shlid", team: "happy", captain: false, emoji: "🏎️", color: "#F72585", bio: "Buggy menace. Pubic hair architect. Moving to Worthing and taking everyone's shins with him. The reverse R9 lives on." },
+  flemzo: { name: "Flemzo", team: "happy", captain: false, emoji: "🎩", color: "#B07EF0", bio: "Swings hard and fast — impressive given most clubs weigh more than him. High heels and a top hat wouldn't slow him down." },
+  shlid: { name: "Shlid", team: "happy", captain: false, emoji: "🏎️", color: "#FF3D9A", bio: "Buggy menace. Pubic hair architect. Moving to Worthing and taking everyone's shins with him. The reverse R9 lives on." },
 };
 
 const TEAMS = {
@@ -157,13 +157,13 @@ const colors = {
   bgSurface: "#0E2516",
   gold: "#C9A84C",
   goldLight: "#E8CC6E",
-  goldDim: "#8B7333",
+  goldDim: "#A08535",
   green: "#1B5E20",
   greenLight: "#2E7D32",
   greenDark: "#0D3B12",
   text: "#E8E6E1",
   textDim: "#8B9A8E",
-  textMuted: "#5A6B5E",
+  textMuted: "#838E88",
   white: "#FFFFFF",
   danger: "#E8786A",
   accent: "#4ECDC4",
