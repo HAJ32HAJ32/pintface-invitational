@@ -474,7 +474,7 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole, onShowResults
 
       {/* Side Games Quick Status */}
       {(() => {
-        const lostBalls = scores.lostBalls || [];
+        const lostBalls = (scores.lostBalls || []).filter(lb => !(scores.lostBallRevoked || []).includes(lb.playerId));
         const lostCount = lostBalls.length;
         const aliveCount = 8 - lostCount;
         const ballAliveValue = `${aliveCount}/8`;
@@ -544,11 +544,20 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
 
   const addLostBall = (playerId) => {
     const alreadyLost = (scores.lostBalls || []).some(lb => lb.playerId === playerId);
-    if (alreadyLost) return;
+    const revoked = (scores.lostBallRevoked || []).includes(playerId);
+    if (alreadyLost || revoked) return;
     const entry = { holeNum: currentHole, playerId, timestamp: Date.now() };
     setScores(prev => ({ ...prev, lostBalls: [...(prev.lostBalls || []), entry] }));
     playLostBallSound();
     setLostBallAlert(entry);
+  };
+
+  const undoLostBall = (playerId) => {
+    setScores(prev => ({
+      ...prev,
+      lostBalls: (prev.lostBalls || []).filter(lb => lb.playerId !== playerId),
+      lostBallRevoked: [...(prev.lostBallRevoked || []), playerId],
+    }));
   };
 
   const updateScore = (team, value) => {
@@ -980,25 +989,29 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {Object.keys(PLAYERS).map(pid => {
             const lost = (scores.lostBalls || []).find(lb => lb.playerId === pid);
+            const revoked = (scores.lostBallRevoked || []).includes(pid);
             const teamColor = TEAMS[PLAYERS[pid].team].color;
             return (
-              <button key={pid} onClick={() => addLostBall(pid)} disabled={!!lost} style={{
-                padding: "5px 10px", borderRadius: 20, cursor: lost ? "default" : "pointer",
-                background: lost ? "#ff444418" : `${teamColor}10`,
-                border: `1px solid ${lost ? "#ff444455" : teamColor + "33"}`,
-                color: lost ? "#ff4444" : colors.text,
-                fontSize: 11, fontFamily: "'Oswald', sans-serif",
-                display: "flex", alignItems: "center", gap: 4,
-                opacity: lost ? 0.7 : 1,
-                textDecoration: lost ? "line-through" : "none",
-              }}>
+              <button
+                key={pid}
+                onClick={() => lost ? undoLostBall(pid) : addLostBall(pid)}
+                disabled={revoked}
+                style={{
+                  padding: "5px 10px", borderRadius: 20,
+                  cursor: revoked ? "default" : "pointer",
+                  background: revoked ? colors.bgSurface : lost ? "#ff444418" : `${teamColor}10`,
+                  border: `1px solid ${revoked ? colors.greenLight + "11" : lost ? "#ff444455" : teamColor + "33"}`,
+                  color: revoked ? colors.textMuted : lost ? "#ff4444" : colors.text,
+                  fontSize: 11, fontFamily: "'Oswald', sans-serif",
+                  display: "flex", alignItems: "center", gap: 4,
+                  opacity: revoked ? 0.35 : 1,
+                  textDecoration: lost ? "line-through" : "none",
+                }}
+              >
                 <span>{PLAYERS[pid].emoji}</span>
                 <span>{PLAYERS[pid].name}</span>
-                {lost && (
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "#ff4444" }}>
-                    OUT (H{lost.holeNum})
-                  </span>
-                )}
+                {lost && <span style={{ fontSize: 9, fontWeight: 700, color: "#ff4444", textDecoration: "none" }}>OUT (H{lost.holeNum}) ↩</span>}
+                {revoked && <span style={{ fontSize: 9, color: colors.textMuted, textDecoration: "none" }}>–</span>}
               </button>
             );
           })}
@@ -2053,6 +2066,7 @@ const INITIAL_SCORES = {
   },
   challengeWinners: {},
   lostBalls: [],
+  lostBallRevoked: [],
 };
 
 const SCORES_DOC = () => doc(db, "game", "live");
