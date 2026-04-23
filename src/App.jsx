@@ -29,7 +29,7 @@ const HOLES = [
   { num: 6, name: "Warren", par: 4, yards: 350, si: 7, image: "/holes/Warren-hole-6-waterfall-course.jpeg.webp", desc: "Accuracy more important than length. A shot over the marker finds undulating fairway, leaving an approach over a stream to a two-tiered green.", challenge: null },
   { num: 7, name: "John Jones", par: 4, yards: 380, si: 3, image: "/holes/John-jones-hole-7-waterfall-hole.jpeg.webp", desc: "The hardest hole on the course. Stream winds the entire length. Fairway is very narrow in places — leave the headcovers on the longer clubs. The hole Gary Player admired.", challenge: null },
   { num: 8, name: "Hummocks", par: 5, yards: 490, si: 9, image: "/holes/Hummocks-hole-8-waterfall-course.jpeg.webp", desc: "First par 5 on the course. Driving range is OOB! Well-protected green needs a long iron or layup due to bunkers and the ditch. A hole that demands thought.", challenge: "drive" },
-  { num: 9, name: "Beechers", par: 4, yards: 470, si: 15, image: "/holes/Beechers-hole-9-waterfall-course.jpeg.webp", desc: "Long par 4 that takes its toll. Avoid two fairway bunkers from tee and second shot. Approach plays longer than expected due to massive elevation change. Breathe at the top!", challenge: null },
+  { num: 9, name: "Beechers", par: 4, yards: 470, si: 15, image: "/holes/Beechers-hole-9-waterfall-course.jpeg.webp", desc: "Long par 4 that takes its toll. Avoid two fairway bunkers from tee and second shot. Approach plays longer than expected due to massive elevation change. Breathe at the top!", challenge: "mulligan" },
   { num: 10, name: "Waterfall", par: 3, yards: 155, si: 12, image: "/holes/Waterfall-hole-10-waterfall-course.jpeg.webp", desc: "The signature hole. Savour the view from the elevated tee before getting down to business. Plays shorter than the yardage. Danger left. Cross your fingers mid-flight.", challenge: "ctp" },
   { num: 11, name: "Valley", par: 4, yards: 355, si: 2, image: "/holes/Valley-hole-11-waterfall-hole.jpeg.webp", desc: "Gary Player put this in his imaginary top 18 holes of the world. Decisions from the tee — take on large trees or play left for a longer approach to a deep two-tier green.", challenge: null },
   { num: 12, name: "Horizon", par: 4, yards: 340, si: 8, image: "/holes/Horizon-hole-12-waterfall-course.jpeg.webp", desc: "Deep two-tier green with serious bunkers protecting the right side. The safer play left leaves a longer approach. Strategic thinking required.", challenge: null },
@@ -38,7 +38,7 @@ const HOLES = [
   { num: 15, name: "Hill", par: 3, yards: 170, si: 6, image: "/holes/Hill-hole-15-waterfall-course.jpeg.webp", desc: "Last par 3, a real beauty surrounded by trouble. Bunkers guard the left, deep ravine and OOB runs the entire right side. Trust your swing and commit.", challenge: "ctp" },
   { num: 16, name: "Old Haven", par: 5, yards: 485, si: 14, image: "/holes/Old-haven-hole-16-waterfall-course.jpeg.webp", desc: "Last par 5 and a real chance to improve your score. Fairway slopes right to left the whole way. Two grass ditches lurk. Downhill putts are dangerously slippery.", challenge: null },
   { num: 17, name: "Holly Bush", par: 4, yards: 365, si: 16, image: "/holes/Hollybush-hole-17-waterfall-course.jpeg.webp", desc: "Almost home! Elevated tee shot — avoid grass bunkers right. Uphill approach to a very shallow green. Take plenty of club. Fast putts above the hole.", challenge: null },
-  { num: 18, name: "Fullers", par: 4, yards: 290, si: 18, image: "/holes/Fullers-hole-18-waterfall-course.jpeg.webp", desc: "Easiest and shortest par 4. Tee shot to the top of the hill earns an easy pitch onto a small green. A definite birdie chance. The Mulligan Hole — use it wisely!", challenge: "mulligan" },
+  { num: 18, name: "Fullers", par: 4, yards: 290, si: 18, image: "/holes/Fullers-hole-18-waterfall-course.jpeg.webp", desc: "Easiest and shortest par 4. Tee shot to the top of the hill earns an easy pitch onto a small green. A definite birdie chance.", challenge: null },
 ];
 
 const CHALLENGE_INFO = {
@@ -473,22 +473,41 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole, onShowResults
       </Card>
 
       {/* Side Games Quick Status */}
-      <SectionTitle icon="🎲">Side Games</SectionTitle>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
-        {[
-          { icon: "🎯", label: "CTP Pot", value: "£25", sub: "Next: Hole 5" },
-          { icon: "💥", label: "Long Drive", value: "Hole 8", sub: "£25 swindle" },
-          { icon: "🏐", label: "Ball Alive", value: "8/8", sub: "All balls in play" },
-          { icon: "🎫", label: "Token", value: "—", sub: "No hazards yet" },
-        ].map((g, i) => (
-          <Card key={i} style={{ padding: 12 }}>
-            <div style={{ fontSize: 16, marginBottom: 4 }}>{g.icon}</div>
-            <div style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>{g.label}</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: colors.gold, fontFamily: "'Oswald', sans-serif" }}>{g.value}</div>
-            <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>{g.sub}</div>
-          </Card>
-        ))}
-      </div>
+      {(() => {
+        const lostBalls = scores.lostBalls || [];
+        const lostCount = lostBalls.length;
+        const aliveCount = 8 - lostCount;
+        const ballAliveValue = `${aliveCount}/8`;
+        const ballAliveSub = lostCount === 0
+          ? "All balls in play"
+          : lostCount === 8
+            ? "Total carnage 😂"
+            : lostBalls.map(lb => PLAYERS[lb.playerId].name).join(", ") + (lostCount === 1 ? " is out" : " are out");
+        const ballAliveColor = lostCount === 0 ? colors.gold : lostCount >= 4 ? "#ff4444" : colors.danger;
+
+        const sideGames = [
+          { icon: "🎯", label: "CTP Pot", value: "£25", sub: "Next: Hole 5", color: colors.gold },
+          { icon: "💥", label: "Long Drive", value: "Hole 8", sub: "£25 swindle", color: colors.gold },
+          { icon: "🏐", label: "Ball Alive", value: ballAliveValue, sub: ballAliveSub, color: ballAliveColor },
+          { icon: "🎫", label: "Token", value: "—", sub: "No hazards yet", color: colors.gold },
+        ];
+
+        return (
+          <>
+            <SectionTitle icon="🎲">Side Games</SectionTitle>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+              {sideGames.map((g, i) => (
+                <Card key={i} style={{ padding: 12 }}>
+                  <div style={{ fontSize: 16, marginBottom: 4 }}>{g.icon}</div>
+                  <div style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>{g.label}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: g.color, fontFamily: "'Oswald', sans-serif" }}>{g.value}</div>
+                  <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>{g.sub}</div>
+                </Card>
+              ))}
+            </div>
+          </>
+        );
+      })()}
 
       {/* Quick Links */}
       <SectionTitle icon="⚡">Quick Access</SectionTitle>
@@ -524,6 +543,8 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
   };
 
   const addLostBall = (playerId) => {
+    const alreadyLost = (scores.lostBalls || []).some(lb => lb.playerId === playerId);
+    if (alreadyLost) return;
     const entry = { holeNum: currentHole, playerId, timestamp: Date.now() };
     setScores(prev => ({ ...prev, lostBalls: [...(prev.lostBalls || []), entry] }));
     playLostBallSound();
@@ -958,24 +979,25 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {Object.keys(PLAYERS).map(pid => {
-            const totalLost = (scores.lostBalls || []).filter(lb => lb.playerId === pid).length;
-            const lostOnHole = (scores.lostBalls || []).filter(lb => lb.playerId === pid && lb.holeNum === currentHole).length;
+            const lost = (scores.lostBalls || []).find(lb => lb.playerId === pid);
             const teamColor = TEAMS[PLAYERS[pid].team].color;
             return (
-              <button key={pid} onClick={() => addLostBall(pid)} style={{
-                padding: "5px 10px", borderRadius: 20, cursor: "pointer",
-                background: lostOnHole > 0 ? `${teamColor}25` : `${teamColor}10`,
-                border: `1px solid ${lostOnHole > 0 ? teamColor + "66" : teamColor + "33"}`,
-                color: colors.text, fontSize: 11, fontFamily: "'Oswald', sans-serif",
+              <button key={pid} onClick={() => addLostBall(pid)} disabled={!!lost} style={{
+                padding: "5px 10px", borderRadius: 20, cursor: lost ? "default" : "pointer",
+                background: lost ? "#ff444418" : `${teamColor}10`,
+                border: `1px solid ${lost ? "#ff444455" : teamColor + "33"}`,
+                color: lost ? "#ff4444" : colors.text,
+                fontSize: 11, fontFamily: "'Oswald', sans-serif",
                 display: "flex", alignItems: "center", gap: 4,
+                opacity: lost ? 0.7 : 1,
+                textDecoration: lost ? "line-through" : "none",
               }}>
                 <span>{PLAYERS[pid].emoji}</span>
                 <span>{PLAYERS[pid].name}</span>
-                {totalLost > 0 && (
-                  <span style={{
-                    background: "#ff4444", color: "#fff",
-                    fontSize: 9, fontWeight: 700, borderRadius: 10, padding: "1px 5px",
-                  }}>{totalLost}</span>
+                {lost && (
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#ff4444" }}>
+                    OUT (H{lost.holeNum})
+                  </span>
                 )}
               </button>
             );
