@@ -48,6 +48,19 @@ const CHALLENGE_INFO = {
   mulligan: { label: "MULLIGAN", icon: "🔄", color: "#9B5DE5", desc: "Each player gets ONE mulligan to use on any shot during this hole." },
 };
 
+const LOST_BALL_MESSAGES = [
+  (name) => `${name} has donated a pristine Titleist to the rough ecosystem. Very generous.`,
+  (name) => `BREAKING: ${name}'s ball has declared independence. Search party dispatched.`,
+  (name) => `${name}'s ball went for a walk. It hasn't come back. It's not coming back.`,
+  (name) => `The ball has gone walkabout. Classic ${name}. Absolutely classic.`,
+  (name) => `RIP little ball. You deserved better than ${name}.`,
+  (name) => `${name} is now playing an expensive game of fetch with nature.`,
+  (name) => `Scientists baffled as ${name}'s ball defies all known laws of physics and vanishes.`,
+  (name) => `${name}'s ball has found a new home in the undergrowth. Rent free.`,
+  (name) => `LOST BALL ALERT: ${name} is now on their provisional. Tragic scenes.`,
+  (name) => `The trees have spoken. ${name}'s ball belongs to them now.`,
+];
+
 const ODDS_CATEGORIES = [
   {
     title: "Hole in One",
@@ -502,6 +515,20 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
   const hole = HOLES[currentHole - 1];
   const isBack9 = currentHole > 9;
   const [showFinalise, setShowFinalise] = useState(false);
+  const [lostBallAlert, setLostBallAlert] = useState(null);
+
+  const playLostBallSound = () => {
+    const audio = new Audio('/fahhhhh.mp3');
+    audio.volume = 1.0;
+    audio.play().catch(() => {});
+  };
+
+  const addLostBall = (playerId) => {
+    const entry = { holeNum: currentHole, playerId, timestamp: Date.now() };
+    setScores(prev => ({ ...prev, lostBalls: [...(prev.lostBalls || []), entry] }));
+    playLostBallSound();
+    setLostBallAlert(entry);
+  };
 
   const updateScore = (team, value) => {
     if (!isBack9) {
@@ -639,6 +666,14 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
                   position: "absolute", top: -2, right: -2,
                   width: 7, height: 7, borderRadius: "50%",
                   background: CHALLENGE_INFO[h.challenge].color,
+                }} />
+              )}
+              {(scores.lostBalls || []).some(lb => lb.holeNum === h.num) && (
+                <span style={{
+                  position: "absolute", bottom: -2, right: -2,
+                  width: 7, height: 7, borderRadius: "50%",
+                  background: "#ff4444",
+                  border: `1px solid ${colors.bg}`,
                 }} />
               )}
             </button>
@@ -916,6 +951,38 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
         );
       })()}
 
+      {/* Lost Ball */}
+      <Card style={{ marginTop: 12 }}>
+        <div style={{ fontSize: 9, letterSpacing: 2, color: "#ff4444", fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 10 }}>
+          🔴 Lost a Ball?
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {Object.keys(PLAYERS).map(pid => {
+            const totalLost = (scores.lostBalls || []).filter(lb => lb.playerId === pid).length;
+            const lostOnHole = (scores.lostBalls || []).filter(lb => lb.playerId === pid && lb.holeNum === currentHole).length;
+            const teamColor = TEAMS[PLAYERS[pid].team].color;
+            return (
+              <button key={pid} onClick={() => addLostBall(pid)} style={{
+                padding: "5px 10px", borderRadius: 20, cursor: "pointer",
+                background: lostOnHole > 0 ? `${teamColor}25` : `${teamColor}10`,
+                border: `1px solid ${lostOnHole > 0 ? teamColor + "66" : teamColor + "33"}`,
+                color: colors.text, fontSize: 11, fontFamily: "'Oswald', sans-serif",
+                display: "flex", alignItems: "center", gap: 4,
+              }}>
+                <span>{PLAYERS[pid].emoji}</span>
+                <span>{PLAYERS[pid].name}</span>
+                {totalLost > 0 && (
+                  <span style={{
+                    background: "#ff4444", color: "#fff",
+                    fontSize: 9, fontWeight: 700, borderRadius: 10, padding: "1px 5px",
+                  }}>{totalLost}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
       {/* Nav */}
       {(() => {
         const teeShotAttributed = !currentTeam || !!scores.teeShotUsed?.scramble?.[currentTeam]?.[currentHole];
@@ -979,6 +1046,10 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
           currentTeam={currentTeam}
           onClose={() => setShowFinalise(false)}
         />
+      )}
+
+      {lostBallAlert && (
+        <LostBallNotification event={lostBallAlert} onDismiss={() => setLostBallAlert(null)} />
       )}
     </div>
   );
@@ -1882,6 +1953,60 @@ function PlayerSelectScreen({ onSelect }) {
   );
 }
 
+// ─── LOST BALL NOTIFICATION ─────────────────────────────────────────────────────
+
+function LostBallNotification({ event, onDismiss }) {
+  const player = PLAYERS[event.playerId];
+  const teamColor = TEAMS[player.team].color;
+  const [msg] = useState(() => LOST_BALL_MESSAGES[Math.floor(Math.random() * LOST_BALL_MESSAGES.length)](player.name));
+
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 5000);
+    return () => clearTimeout(t);
+  }, [onDismiss]);
+
+  return (
+    <div onClick={onDismiss} style={{
+      position: "fixed", inset: 0, zIndex: 500,
+      background: "rgba(0,0,0,0.88)",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      padding: 32, cursor: "pointer",
+    }}>
+      <div style={{ fontSize: 72, marginBottom: 12, animation: "none" }}>⛳</div>
+      <div style={{
+        fontSize: 11, letterSpacing: 3, color: "#ff4444",
+        fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 16,
+      }}>
+        🔴 BALL LOST 🔴
+      </div>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 10, marginBottom: 20,
+        padding: "10px 20px", borderRadius: 12,
+        background: `${teamColor}22`, border: `1px solid ${teamColor}55`,
+      }}>
+        <span style={{ fontSize: 32 }}>{player.emoji}</span>
+        <span style={{
+          fontSize: 26, fontWeight: 700, color: teamColor,
+          fontFamily: "'Oswald', sans-serif", letterSpacing: 1,
+        }}>{player.name}</span>
+      </div>
+      <div style={{
+        fontSize: 15, color: colors.textDim, textAlign: "center",
+        fontFamily: "'Playfair Display', serif", fontStyle: "italic",
+        maxWidth: 300, lineHeight: 1.65,
+      }}>
+        {msg}
+      </div>
+      <div style={{
+        marginTop: 28, fontSize: 10, color: colors.textMuted,
+        fontFamily: "'Oswald', sans-serif", letterSpacing: 2, textTransform: "uppercase",
+      }}>
+        Tap to dismiss
+      </div>
+    </div>
+  );
+}
+
 // ─── APP ────────────────────────────────────────────────────────────────────────
 
 const INITIAL_SCORES = {
@@ -1905,6 +2030,7 @@ const INITIAL_SCORES = {
     holeNum: null,
   },
   challengeWinners: {},
+  lostBalls: [],
 };
 
 const SCORES_DOC = () => doc(db, "game", "live");
