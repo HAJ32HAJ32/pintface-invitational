@@ -295,6 +295,8 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole, onShowResults
 
   const fmtPts = (n) => { if (n === null || n === undefined) return "–"; if (n % 1 === 0) return String(n); const w = Math.floor(n); return w === 0 ? "½" : `${w}½`; };
 
+  const [activeTab, setActiveTab] = useState(currentHole > 9 ? "back9" : "front9");
+
   const hole = HOLES[currentHole - 1];
 
   return (
@@ -330,99 +332,107 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole, onShowResults
         />
       </div>
 
-      {/* Score Summary */}
-      <Card style={{ marginBottom: 12, background: `linear-gradient(135deg, ${colors.bgCard} 0%, ${colors.greenDark} 100%)` }}>
-        <div style={{
-          fontSize: 9, letterSpacing: 2.5, color: colors.goldDim, textAlign: "center",
-          fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 12,
-        }}>Front 9 — Texas Scramble</div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ textAlign: "center", flex: 1 }}>
-            <TeamBadge team="pigs" size="lg" />
-            <div style={{
-              fontSize: 44, fontWeight: 700, color: colors.white, marginTop: 6,
-              fontFamily: "'Oswald', sans-serif", lineHeight: 1,
-            }}>{front9Pigs || "–"}</div>
-            {front9PigsDiff !== null && (
-              <div style={{ fontSize: 13, color: front9PigsDiff > 0 ? colors.danger : colors.accent, fontWeight: 600, fontFamily: "'Oswald', sans-serif" }}>
-                {front9PigsDiff > 0 ? "+" : ""}{front9PigsDiff}
-              </div>
-            )}
-          </div>
-          <div style={{
-            fontSize: 14, color: colors.textMuted, fontWeight: 600,
-            fontFamily: "'Oswald', sans-serif", letterSpacing: 2,
-          }}>VS</div>
-          <div style={{ textAlign: "center", flex: 1 }}>
-            <TeamBadge team="happy" size="lg" />
-            <div style={{
-              fontSize: 44, fontWeight: 700, color: colors.white, marginTop: 6,
-              fontFamily: "'Oswald', sans-serif", lineHeight: 1,
-            }}>{front9Happy || "–"}</div>
-            {front9HappyDiff !== null && (
-              <div style={{ fontSize: 13, color: front9HappyDiff > 0 ? colors.danger : colors.accent, fontWeight: 600, fontFamily: "'Oswald', sans-serif" }}>
-                {front9HappyDiff > 0 ? "+" : ""}{front9HappyDiff}
-              </div>
-            )}
-          </div>
+      {/* Tabbed Score Card */}
+      <Card style={{ marginBottom: 10, background: activeTab === "front9" ? `linear-gradient(135deg, ${colors.bgCard} 0%, ${colors.greenDark} 100%)` : colors.bgCard }}>
+        {/* Tab bar */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 14, background: colors.bg + "80", borderRadius: 8, padding: 3 }}>
+          {[{ id: "front9", label: "Front 9" }, { id: "back9", label: "Back 9" }].map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              style={{
+                flex: 1, padding: "6px 0", borderRadius: 6, border: "none", cursor: "pointer",
+                fontFamily: "'Oswald', sans-serif", fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase",
+                background: activeTab === id ? colors.gold : "transparent",
+                color: activeTab === id ? colors.bg : colors.textMuted,
+                fontWeight: activeTab === id ? 700 : 400,
+                transition: "all 0.15s",
+              }}
+            >{label}</button>
+          ))}
         </div>
+
+        {/* Front 9 content */}
+        {activeTab === "front9" && (
+          <>
+            <div style={{ fontSize: 9, letterSpacing: 2.5, color: colors.goldDim, textAlign: "center", fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 12 }}>
+              Texas Scramble
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <TeamBadge team="pigs" size="lg" />
+                <div style={{ fontSize: 44, fontWeight: 700, color: colors.white, marginTop: 6, fontFamily: "'Oswald', sans-serif", lineHeight: 1 }}>{front9Pigs || "–"}</div>
+                {front9PigsDiff !== null && (
+                  <div style={{ fontSize: 13, color: front9PigsDiff > 0 ? colors.danger : colors.accent, fontWeight: 600, fontFamily: "'Oswald', sans-serif" }}>
+                    {front9PigsDiff > 0 ? "+" : ""}{front9PigsDiff}
+                  </div>
+                )}
+              </div>
+              <div style={{ fontSize: 14, color: colors.textMuted, fontWeight: 600, fontFamily: "'Oswald', sans-serif", letterSpacing: 2 }}>VS</div>
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <TeamBadge team="happy" size="lg" />
+                <div style={{ fontSize: 44, fontWeight: 700, color: colors.white, marginTop: 6, fontFamily: "'Oswald', sans-serif", lineHeight: 1 }}>{front9Happy || "–"}</div>
+                {front9HappyDiff !== null && (
+                  <div style={{ fontSize: 13, color: front9HappyDiff > 0 ? colors.danger : colors.accent, fontWeight: 600, fontFamily: "'Oswald', sans-serif" }}>
+                    {front9HappyDiff > 0 ? "+" : ""}{front9HappyDiff}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Back 9 content */}
+        {activeTab === "back9" && (
+          <>
+            <div style={{ fontSize: 9, letterSpacing: 2.5, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 12 }}>
+              Match Play
+            </div>
+            {[match1, match2].map((m, idx) => {
+              const pairings = scores.matchPairings?.[idx];
+              const leaderColor = m.leader ? TEAMS[m.leader].color : colors.gold;
+              return (
+                <div key={idx} style={{ marginBottom: idx === 0 ? 10 : 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: "'Oswald', sans-serif", letterSpacing: 1 }}>
+                      Match {idx + 1}{pairings ? ` · ${pairings.pigs.map(p => PLAYERS[p].name.split(" ")[0]).join("/")} vs ${pairings.happy.map(p => PLAYERS[p].name.split(" ")[0]).join("/")}` : ""}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: leaderColor, fontFamily: "'Oswald', sans-serif" }}>
+                      {matchStatusLabel(m, idx)}
+                    </div>
+                  </div>
+                  {idx === 0 && <div style={{ height: 1, background: colors.greenLight + "15", margin: "8px 0" }} />}
+                </div>
+              );
+            })}
+          </>
+        )}
       </Card>
 
-      {/* Back 9 Match Play */}
-      <Card style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 9, letterSpacing: 2.5, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 12 }}>
-          Back 9 — Match Play
+      {/* Compact Standings */}
+      <Card style={{ marginBottom: 12, padding: "10px 16px" }}>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginBottom: 6 }}>
+          <span style={{ fontSize: 20, fontWeight: 700, color: points.total.pigs > points.total.happy ? TEAMS.pigs.color : colors.text, fontFamily: "'Oswald', sans-serif" }}>{fmtPts(points.total.pigs)}</span>
+          <span style={{ fontSize: 10, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", letterSpacing: 2 }}>STANDINGS</span>
+          <span style={{ fontSize: 20, fontWeight: 700, color: points.total.happy > points.total.pigs ? TEAMS.happy.color : colors.text, fontFamily: "'Oswald', sans-serif" }}>{fmtPts(points.total.happy)}</span>
         </div>
-        {[match1, match2].map((m, idx) => {
-          const pairings = scores.matchPairings?.[idx];
-          const leaderColor = m.leader ? TEAMS[m.leader].color : colors.gold;
-          return (
-            <div key={idx} style={{ marginBottom: idx === 0 ? 10 : 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: "'Oswald', sans-serif", letterSpacing: 1 }}>
-                  Match {idx + 1}{pairings ? ` · ${pairings.pigs.map(p => PLAYERS[p].name.split(" ")[0]).join("/")} vs ${pairings.happy.map(p => PLAYERS[p].name.split(" ")[0]).join("/")}` : ""}
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: leaderColor, fontFamily: "'Oswald', sans-serif" }}>
-                  {matchStatusLabel(m, idx)}
-                </div>
-              </div>
-              {idx === 0 && <div style={{ height: 1, background: colors.greenLight + "15", margin: "8px 0" }} />}
-            </div>
-          );
-        })}
-      </Card>
-
-      {/* Overall Points */}
-      <Card style={{ marginBottom: 12, background: `linear-gradient(135deg, ${colors.bgCard} 0%, ${colors.greenDark} 100%)` }}>
-        <div style={{ fontSize: 9, letterSpacing: 2.5, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 12 }}>
-          Overall Standings
-        </div>
-        {[
-          { label: "Front 9 (Scramble)", pts: points.front9 },
-          { label: "Match 1", pts: points.matches[0] },
-          { label: "Match 2", pts: points.matches[1] },
-        ].map(({ label, pts }, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <div style={{ fontSize: 11, color: colors.textDim, fontFamily: "'Oswald', sans-serif" }}>{label}</div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: pts?.pigs > pts?.happy ? TEAMS.pigs.color : colors.textMuted, fontFamily: "'Oswald', sans-serif", minWidth: 16, textAlign: "right" }}>{pts ? fmtPts(pts.pigs) : "–"}</span>
-              <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: "'Oswald', sans-serif" }}>–</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: pts?.happy > pts?.pigs ? TEAMS.happy.color : colors.textMuted, fontFamily: "'Oswald', sans-serif", minWidth: 16 }}>{pts ? fmtPts(pts.happy) : "–"}</span>
-            </div>
-          </div>
-        ))}
-        <div style={{ height: 1, background: colors.gold + "33", margin: "8px 0" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: colors.gold, fontFamily: "'Oswald', sans-serif", letterSpacing: 1 }}>TOTAL</div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ fontSize: 18, fontWeight: 700, color: points.total.pigs > points.total.happy ? TEAMS.pigs.color : colors.text, fontFamily: "'Oswald', sans-serif", minWidth: 20, textAlign: "right" }}>{fmtPts(points.total.pigs)}</span>
-            <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: "'Oswald', sans-serif" }}>–</span>
-            <span style={{ fontSize: 18, fontWeight: 700, color: points.total.happy > points.total.pigs ? TEAMS.happy.color : colors.text, fontFamily: "'Oswald', sans-serif", minWidth: 20 }}>{fmtPts(points.total.happy)}</span>
-          </div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+          {[
+            { label: "F9", pts: points.front9 },
+            { label: "M1", pts: points.matches[0] },
+            { label: "M2", pts: points.matches[1] },
+          ].map(({ label, pts }, i) => (
+            <span key={i} style={{ fontSize: 10, color: colors.textMuted, fontFamily: "'Oswald', sans-serif" }}>
+              <span style={{ color: colors.textDim }}>{label}:</span>{" "}
+              <span style={{ color: pts?.pigs > pts?.happy ? TEAMS.pigs.color : colors.textMuted }}>{pts ? fmtPts(pts.pigs) : "–"}</span>
+              <span style={{ color: colors.textMuted + "80" }}>–</span>
+              <span style={{ color: pts?.happy > pts?.pigs ? TEAMS.happy.color : colors.textMuted }}>{pts ? fmtPts(pts.happy) : "–"}</span>
+            </span>
+          ))}
         </div>
         {scores.finalized && (
           <button onClick={onShowResults} style={{
-            width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 8, cursor: "pointer",
+            width: "100%", marginTop: 10, padding: "10px 0", borderRadius: 8, cursor: "pointer",
             background: colors.gold, border: "none",
             color: colors.bg, fontSize: 13, fontWeight: 700, fontFamily: "'Oswald', sans-serif", letterSpacing: 1.5,
           }}>VIEW FINAL RESULTS →</button>
@@ -528,6 +538,34 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
         },
       },
     }));
+  };
+
+  const setChallengeLeader = (playerId) => {
+    setScores(prev => ({
+      ...prev,
+      challengeWinners: { ...(prev.challengeWinners || {}), [currentHole]: { leader: playerId, settled: false } },
+    }));
+  };
+
+  const settleChallenge = (beatenBy) => {
+    setScores(prev => {
+      const cw = prev.challengeWinners?.[currentHole];
+      return {
+        ...prev,
+        challengeWinners: {
+          ...(prev.challengeWinners || {}),
+          [currentHole]: { leader: beatenBy ?? cw?.leader, settled: true },
+        },
+      };
+    });
+  };
+
+  const clearChallenge = () => {
+    setScores(prev => {
+      const cw = { ...(prev.challengeWinners || {}) };
+      delete cw[currentHole];
+      return { ...prev, challengeWinners: cw };
+    });
   };
 
   // Tally helpers
@@ -773,6 +811,110 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
           )}
         </div>
       )}
+
+      {/* Challenge Winner */}
+      {["ctp", "drive"].includes(hole.challenge) && (() => {
+        const cw = scores.challengeWinners?.[currentHole];
+        const info = CHALLENGE_INFO[hole.challenge];
+        const accentColor = info.color;
+
+        if (!cw) {
+          return (
+            <Card style={{ marginTop: 12, marginBottom: 4, border: `1px solid ${accentColor}33` }}>
+              <div style={{ fontSize: 9, letterSpacing: 2, color: accentColor, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 10 }}>
+                {info.icon} {info.label} — Who's on top?
+              </div>
+              {["pigs", "happy"].map((team, ti) => (
+                <div key={team} style={{ marginBottom: ti === 0 ? 10 : 0 }}>
+                  <div style={{ fontSize: 9, letterSpacing: 1.5, color: TEAMS[team].color, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 6 }}>
+                    {TEAMS[team].short}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {TEAMS[team].members.map(pid => (
+                      <button key={pid} onClick={() => setChallengeLeader(pid)} style={{
+                        padding: "5px 10px", borderRadius: 20, border: `1px solid ${TEAMS[team].color}44`,
+                        background: `${TEAMS[team].color}12`, cursor: "pointer",
+                        color: colors.text, fontSize: 11, fontFamily: "'Oswald', sans-serif",
+                        display: "flex", alignItems: "center", gap: 4,
+                      }}>
+                        <span>{PLAYERS[pid].emoji}</span>
+                        <span>{PLAYERS[pid].name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </Card>
+          );
+        }
+
+        if (!cw.settled) {
+          const leaderTeam = PLAYERS[cw.leader].team;
+          const otherTeam = leaderTeam === "pigs" ? "happy" : "pigs";
+          return (
+            <Card style={{ marginTop: 12, marginBottom: 4, border: `1px solid ${accentColor}33` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontSize: 9, letterSpacing: 2, color: accentColor, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>
+                  {info.icon} {info.label}
+                </div>
+                <button onClick={clearChallenge} style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: 10, color: colors.textMuted, fontFamily: "'Oswald', sans-serif", letterSpacing: 1,
+                }}>← Change</button>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 10px", borderRadius: 8, background: `${TEAMS[leaderTeam].color}15`, border: `1px solid ${TEAMS[leaderTeam].color}30` }}>
+                <span style={{ fontSize: 18 }}>{PLAYERS[cw.leader].emoji}</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: TEAMS[leaderTeam].color, fontFamily: "'Oswald', sans-serif" }}>{PLAYERS[cw.leader].name} leads</div>
+                  <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: "'Oswald', sans-serif", letterSpacing: 1 }}>{TEAMS[leaderTeam].short}</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, color: TEAMS[otherTeam].color, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 8 }}>
+                {TEAMS[otherTeam].short} — can you beat it?
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {TEAMS[otherTeam].members.map(pid => (
+                  <button key={pid} onClick={() => settleChallenge(pid)} style={{
+                    padding: "5px 10px", borderRadius: 20, border: `1px solid ${TEAMS[otherTeam].color}44`,
+                    background: `${TEAMS[otherTeam].color}12`, cursor: "pointer",
+                    color: colors.text, fontSize: 11, fontFamily: "'Oswald', sans-serif",
+                    display: "flex", alignItems: "center", gap: 4,
+                  }}>
+                    <span>{PLAYERS[pid].emoji}</span>
+                    <span>{PLAYERS[pid].name}</span>
+                  </button>
+                ))}
+                <button onClick={() => settleChallenge(null)} style={{
+                  padding: "5px 12px", borderRadius: 20, border: `1px solid ${colors.textMuted}44`,
+                  background: colors.bgSurface, cursor: "pointer",
+                  color: colors.textMuted, fontSize: 11, fontFamily: "'Oswald', sans-serif", letterSpacing: 0.5,
+                }}>Leave it</button>
+              </div>
+            </Card>
+          );
+        }
+
+        return (
+          <Card style={{ marginTop: 12, marginBottom: 4, border: `1px solid ${accentColor}44` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 9, letterSpacing: 2, color: accentColor, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>
+                {info.icon} {info.label} Winner
+              </div>
+              <button onClick={clearChallenge} style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 10, color: colors.textMuted, fontFamily: "'Oswald', sans-serif", letterSpacing: 1,
+              }}>Clear</button>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
+              <span style={{ fontSize: 28 }}>{PLAYERS[cw.leader].emoji}</span>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: TEAMS[PLAYERS[cw.leader].team].color, fontFamily: "'Oswald', sans-serif" }}>{PLAYERS[cw.leader].name}</div>
+                <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: "'Oswald', sans-serif", letterSpacing: 1 }}>{TEAMS[PLAYERS[cw.leader].team].short}</div>
+              </div>
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* Nav */}
       {(() => {
@@ -1762,6 +1904,7 @@ const INITIAL_SCORES = {
     dismissed: false,
     holeNum: null,
   },
+  challengeWinners: {},
 };
 
 const SCORES_DOC = () => doc(db, "game", "live");
