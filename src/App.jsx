@@ -477,33 +477,62 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole, onShowResults
         const lostBalls = (scores.lostBalls || []).filter(lb => !(scores.lostBallRevoked || []).includes(lb.playerId));
         const lostCount = lostBalls.length;
         const aliveCount = 8 - lostCount;
-        const ballAliveValue = `${aliveCount}/8`;
-        const ballAliveSub = lostCount === 0
-          ? "All balls in play"
+        const ballAliveColor = lostCount === 0 ? colors.gold : lostCount >= 4 ? "#ff4444" : colors.danger;
+
+        const ldActivated = !!(scores.challengeWinners?.[8]);
+        const ctpActivated = !!(scores.challengeWinners?.[10]);
+        const hole8Played = scores.scramble?.pigs?.[8] !== undefined || scores.scramble?.happy?.[8] !== undefined;
+        const hole10Played = scores.scramble?.pigs?.[10] !== undefined || scores.scramble?.happy?.[10] !== undefined;
+
+        let ballPot = 50;
+        if (hole8Played && !ldActivated) ballPot += 25;
+        if (hole10Played && !ctpActivated) ballPot += 25;
+
+        const ballSub = lostCount === 0
+          ? "All 8 balls in play"
           : lostCount === 8
             ? "Total carnage 😂"
             : lostBalls.map(lb => PLAYERS[lb.playerId].name).join(", ") + (lostCount === 1 ? " is out" : " are out");
-        const ballAliveColor = lostCount === 0 ? colors.gold : lostCount >= 4 ? "#ff4444" : colors.danger;
 
-        const sideGames = [
-          { icon: "🎯", label: "CTP Pot", value: "£25", sub: "Next: Hole 5", color: colors.gold },
-          { icon: "💥", label: "Long Drive", value: "Hole 8", sub: "£25 swindle", color: colors.gold },
-          { icon: "🏐", label: "Ball Alive", value: ballAliveValue, sub: ballAliveSub, color: ballAliveColor },
-          { icon: "🎫", label: "Token", value: "—", sub: "No hazards yet", color: colors.gold },
-        ];
+        const ldRolloverLine = hole8Played
+          ? (!ldActivated ? "LD unclaimed: +£25 added" : null)
+          : "+£25 if LD unclaimed (h.8)";
+        const ctpRolloverLine = hole10Played
+          ? (!ctpActivated ? "CTP unclaimed: +£25 added" : null)
+          : "+£25 if CTP unclaimed (h.10)";
 
         return (
           <>
             <SectionTitle icon="🎲">Side Games</SectionTitle>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
-              {sideGames.map((g, i) => (
-                <Card key={i} style={{ padding: 12 }}>
-                  <div style={{ fontSize: 16, marginBottom: 4 }}>{g.icon}</div>
-                  <div style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>{g.label}</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: g.color, fontFamily: "'Oswald', sans-serif" }}>{g.value}</div>
-                  <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>{g.sub}</div>
-                </Card>
-              ))}
+              <Card style={{ padding: 12 }}>
+                <div style={{ fontSize: 16, marginBottom: 4 }}>💥</div>
+                <div style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>Longest Drive</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: colors.gold, fontFamily: "'Oswald', sans-serif" }}>Hole 8</div>
+                <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>£25 prize</div>
+              </Card>
+              <Card style={{ padding: 12 }}>
+                <div style={{ fontSize: 16, marginBottom: 4 }}>🎯</div>
+                <div style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>Closest to Pin</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: colors.gold, fontFamily: "'Oswald', sans-serif" }}>Hole 10</div>
+                <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>£25 prize</div>
+              </Card>
+              <Card style={{ padding: 12, gridColumn: "span 2" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 16, marginBottom: 4 }}>⚾</div>
+                    <div style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>Don't Lose the Ball</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: ballAliveColor, fontFamily: "'Oswald', sans-serif" }}>£{ballPot}</div>
+                    <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>{ballSub}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: ballAliveColor, fontFamily: "'Oswald', sans-serif" }}>{aliveCount}/8</div>
+                    <div style={{ fontSize: 9, color: colors.textDim }}>balls alive</div>
+                    {ldRolloverLine && <div style={{ fontSize: 9, color: colors.textDim, marginTop: 6 }}>{ldRolloverLine}</div>}
+                    {ctpRolloverLine && <div style={{ fontSize: 9, color: colors.textDim, marginTop: 2 }}>{ctpRolloverLine}</div>}
+                  </div>
+                </div>
+              </Card>
             </div>
           </>
         );
