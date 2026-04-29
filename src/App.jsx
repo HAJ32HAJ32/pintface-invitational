@@ -25,7 +25,7 @@ const HOLES = [
   { num: 2, name: "Gomorrah", par: 4, yards: 280, si: 17, image: "/holes/Gomorrah-hole-2-waterfall-course.jpeg.webp", desc: "Very short par 4 offering a real birdie chance. Reach the top of the slope, favouring the right side for a view of the green. The brave can take on the green from the tee.", challenge: null },
   { num: 3, name: "Gateway", par: 4, yards: 480, si: 5, image: "/holes/Gateway-hole-3-waterfall-course.jpeg.webp", desc: "Par 4 requiring accuracy to thread the ball through the trees. Well-placed bunkers make the approach tough. Huge bunker front-left swallows many balls. Severe slope in the middle of the green.", challenge: null },
   { num: 4, name: "Hell Corner", par: 4, yards: 370, si: 1, image: "/holes/Hellcorner-hole-4-waterfall-course.jpeg.webp", desc: "Very appropriately named. Tough tee shot hugging the tree line. Must be long enough to crest the hill for a view of the green. Two deep bunkers guard any miss-struck approach. Par is a very good score.", challenge: "oneclub" },
-  { num: 5, name: "Punch Bowl", par: 3, yards: 165, si: 11, image: "/holes/Punchbowl-hole-5-waterfall-course.jpeg.webp", desc: "First of three stunning par 3s. Green sits in a punch bowl with OOB just yards left. Safe bail-out right, but a bunker waits atop the slope. Accuracy is everything.", challenge: "ctp" },
+  { num: 5, name: "Punch Bowl", par: 3, yards: 165, si: 11, image: "/holes/Punchbowl-hole-5-waterfall-course.jpeg.webp", desc: "First of three stunning par 3s. Green sits in a punch bowl with OOB just yards left. Safe bail-out right, but a bunker waits atop the slope. Accuracy is everything.", challenge: null },
   { num: 6, name: "Warren", par: 4, yards: 350, si: 7, image: "/holes/Warren-hole-6-waterfall-course.jpeg.webp", desc: "Accuracy more important than length. A shot over the marker finds undulating fairway, leaving an approach over a stream to a two-tiered green.", challenge: null },
   { num: 7, name: "John Jones", par: 4, yards: 380, si: 3, image: "/holes/John-jones-hole-7-waterfall-hole.jpeg.webp", desc: "The hardest hole on the course. Stream winds the entire length. Fairway is very narrow in places — leave the headcovers on the longer clubs. The hole Gary Player admired.", challenge: null },
   { num: 8, name: "Hummocks", par: 5, yards: 490, si: 9, image: "/holes/Hummocks-hole-8-waterfall-course.jpeg.webp", desc: "First par 5 on the course. Driving range is OOB! Well-protected green needs a long iron or layup due to bunkers and the ditch. A hole that demands thought.", challenge: "drive" },
@@ -35,7 +35,7 @@ const HOLES = [
   { num: 12, name: "Horizon", par: 4, yards: 340, si: 8, image: "/holes/Horizon-hole-12-waterfall-course.jpeg.webp", desc: "Deep two-tier green with serious bunkers protecting the right side. The safer play left leaves a longer approach. Strategic thinking required.", challenge: null },
   { num: 13, name: "Winter Pick", par: 5, yards: 500, si: 4, image: "/holes/Winterfallpick-hole-13-waterfall-course.jpeg.webp", desc: "A demanding par 5. Avoid fairway bunkers from tee and second shot. Third plays longer than expected — massive elevation change ahead.", challenge: null },
   { num: 14, name: "Blaster", par: 4, yards: 345, si: 10, image: "/holes/Blaster-hole-14-waterfall-course.jpeg.webp", desc: "A plaque commemorates a WWII bomber crash on this hole. Navigate the history and the hazards with a measured approach.", challenge: null },
-  { num: 15, name: "Hill", par: 3, yards: 170, si: 6, image: "/holes/Hill-hole-15-waterfall-course.jpeg.webp", desc: "Last par 3, a real beauty surrounded by trouble. Bunkers guard the left, deep ravine and OOB runs the entire right side. Trust your swing and commit.", challenge: "ctp" },
+  { num: 15, name: "Hill", par: 3, yards: 170, si: 6, image: "/holes/Hill-hole-15-waterfall-course.jpeg.webp", desc: "Last par 3, a real beauty surrounded by trouble. Bunkers guard the left, deep ravine and OOB runs the entire right side. Trust your swing and commit.", challenge: null },
   { num: 16, name: "Old Haven", par: 5, yards: 485, si: 14, image: "/holes/Old-haven-hole-16-waterfall-course.jpeg.webp", desc: "Last par 5 and a real chance to improve your score. Fairway slopes right to left the whole way. Two grass ditches lurk. Downhill putts are dangerously slippery.", challenge: null },
   { num: 17, name: "Holly Bush", par: 4, yards: 365, si: 16, image: "/holes/Hollybush-hole-17-waterfall-course.jpeg.webp", desc: "Almost home! Elevated tee shot — avoid grass bunkers right. Uphill approach to a very shallow green. Take plenty of club. Fast putts above the hole.", challenge: null },
   { num: 18, name: "Fullers", par: 4, yards: 290, si: 18, image: "/holes/Fullers-hole-18-waterfall-course.jpeg.webp", desc: "Easiest and shortest par 4. Tee shot to the top of the hill earns an easy pitch onto a small green. A definite birdie chance.", challenge: null },
@@ -479,8 +479,10 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole, onShowResults
         const aliveCount = 8 - lostCount;
         const ballAliveColor = lostCount === 0 ? colors.gold : lostCount >= 4 ? "#ff4444" : colors.danger;
 
-        const ldActivated = !!(scores.challengeWinners?.[8]);
-        const ctpActivated = !!(scores.challengeWinners?.[10]);
+        const ldEntry = scores.challengeWinners?.[8];
+        const ctpEntry = scores.challengeWinners?.[10];
+        const ldActivated = !!ldEntry;
+        const ctpActivated = !!ctpEntry;
         const hole8Played = scores.scramble?.pigs?.[8] !== undefined || scores.scramble?.happy?.[8] !== undefined;
         const hole10Played = scores.scramble?.pigs?.[10] !== undefined || scores.scramble?.happy?.[10] !== undefined;
 
@@ -509,13 +511,37 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole, onShowResults
                 <div style={{ fontSize: 16, marginBottom: 4 }}>💥</div>
                 <div style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>Longest Drive</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: colors.gold, fontFamily: "'Oswald', sans-serif" }}>Hole 8</div>
-                <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>£25 prize</div>
+                {ldEntry ? (
+                  <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 12 }}>{PLAYERS[ldEntry.leader].emoji}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: ldEntry.settled ? TEAMS[PLAYERS[ldEntry.leader].team].color : colors.textDim, fontFamily: "'Oswald', sans-serif" }}>
+                      {PLAYERS[ldEntry.leader].name}
+                    </span>
+                    <span style={{ fontSize: 9, color: ldEntry.settled ? colors.gold : colors.textMuted, fontFamily: "'Oswald', sans-serif", letterSpacing: 0.5 }}>
+                      {ldEntry.settled ? "🏆 Winner" : "leading"}
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>£25 prize</div>
+                )}
               </Card>
               <Card style={{ padding: 12 }}>
                 <div style={{ fontSize: 16, marginBottom: 4 }}>🎯</div>
                 <div style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>Closest to Pin</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: colors.gold, fontFamily: "'Oswald', sans-serif" }}>Hole 10</div>
-                <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>£25 prize</div>
+                {ctpEntry ? (
+                  <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 12 }}>{PLAYERS[ctpEntry.leader].emoji}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: ctpEntry.settled ? TEAMS[PLAYERS[ctpEntry.leader].team].color : colors.textDim, fontFamily: "'Oswald', sans-serif" }}>
+                      {PLAYERS[ctpEntry.leader].name}
+                    </span>
+                    <span style={{ fontSize: 9, color: ctpEntry.settled ? colors.gold : colors.textMuted, fontFamily: "'Oswald', sans-serif", letterSpacing: 0.5 }}>
+                      {ctpEntry.settled ? "🏆 Winner" : "leading"}
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>£25 prize</div>
+                )}
               </Card>
               <Card style={{ padding: 12, gridColumn: "span 2" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -591,17 +617,10 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
 
   const updateScore = (team, value) => {
     if (!isBack9) {
-      setScores(prev => {
-        const next = {
-          ...prev,
-          scramble: { ...prev.scramble, [team]: { ...prev.scramble[team], [currentHole]: value } },
-        };
-        if (!prev.parToPints?.triggered && currentHole > 1 && value === hole.par) {
-          const otherTeam = team === "pigs" ? "happy" : "pigs";
-          next.parToPints = { triggered: true, nominatedTeam: otherTeam, spinResult: null, dismissed: false, holeNum: currentHole };
-        }
-        return next;
-      });
+      setScores(prev => ({
+        ...prev,
+        scramble: { ...prev.scramble, [team]: { ...prev.scramble[team], [currentHole]: value } },
+      }));
     }
   };
 
@@ -1061,7 +1080,20 @@ function ScoringPage({ scores, setScores, currentHole, setCurrentHole, resetScor
                 fontSize: 13, fontWeight: 600, fontFamily: "'Oswald', sans-serif",
                 opacity: currentHole === 1 ? 0.4 : 1,
               }}>‹ Prev</button>
-              <button onClick={() => canAdvance && setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18 || !canAdvance} style={{
+              <button onClick={() => {
+                if (!canAdvance) return;
+                setScores(prev => {
+                  if (!prev.parToPints?.triggered && currentHole > 1 && currentTeam) {
+                    const holeScore = prev.scramble?.[currentTeam]?.[currentHole];
+                    if (holeScore === hole.par) {
+                      const otherTeam = currentTeam === "pigs" ? "happy" : "pigs";
+                      return { ...prev, parToPints: { triggered: true, nominatedTeam: otherTeam, spinResult: null, dismissed: false, holeNum: currentHole } };
+                    }
+                  }
+                  return prev;
+                });
+                setCurrentHole(prev => Math.min(18, prev + 1));
+              }} disabled={currentHole === 18 || !canAdvance} style={{
                 flex: 1, padding: 12, borderRadius: 10, cursor: (currentHole === 18 || !canAdvance) ? "default" : "pointer",
                 background: canAdvance ? colors.gold : colors.bgCard,
                 border: canAdvance ? "none" : `1px solid ${colors.greenLight}22`,
@@ -1737,12 +1769,48 @@ function WinningModal({ scores, onClose }) {
         </div>
       </div>
 
-      <div style={{ width: "100%", maxWidth: 340, background: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 24 }}>
+      <div style={{ width: "100%", maxWidth: 340, background: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 16 }}>
         <div style={{ fontSize: 9, letterSpacing: 2, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>
           Final Points
         </div>
         <PointsTable points={points} />
       </div>
+
+      {(() => {
+        const ldEntry = scores.challengeWinners?.[8];
+        const ctpEntry = scores.challengeWinners?.[10];
+        if (!ldEntry && !ctpEntry) return null;
+        const rows = [
+          ldEntry && { icon: "💥", label: "Longest Drive", hole: 8, entry: ldEntry },
+          ctpEntry && { icon: "🎯", label: "Closest to Pin", hole: 10, entry: ctpEntry },
+        ].filter(Boolean);
+        return (
+          <div style={{ width: "100%", maxWidth: 340, background: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+            <div style={{ fontSize: 9, letterSpacing: 2, color: colors.goldDim, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase", marginBottom: 12, textAlign: "center" }}>
+              Side Game Winners
+            </div>
+            {rows.map(({ icon, label, hole, entry }) => {
+              const player = PLAYERS[entry.leader];
+              const team = TEAMS[player.team];
+              return (
+                <div key={hole} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, padding: "8px 10px", borderRadius: 8, background: `${team.color}12`, border: `1px solid ${team.color}30` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>{icon}</span>
+                    <div>
+                      <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: "'Oswald', sans-serif", letterSpacing: 1, textTransform: "uppercase" }}>{label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: team.color, fontFamily: "'Oswald', sans-serif" }}>{player.emoji} {player.name}</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 18 }}>{entry.settled ? "🏆" : "⏳"}</div>
+                    <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: "'Oswald', sans-serif" }}>H.{hole}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       <button onClick={onClose} style={{
         padding: "12px 32px", borderRadius: 10, cursor: "pointer",
