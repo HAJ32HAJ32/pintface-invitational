@@ -43,8 +43,8 @@ const HOLES = [
 
 const CHALLENGE_INFO = {
   oneclub: { label: "ONE CLUB", icon: "🏌️", color: "#F4A940", desc: "Each player may only use ONE club for the entire hole, including putting." },
-  ctp: { label: "CTP", icon: "🎯", color: "#4ECDC4", desc: "Closest to the Pin — £25 swindle. If no winner, prize rolls to next par 3." },
-  drive: { label: "LONG DRIVE", icon: "💥", color: "#E8786A", desc: "Longest Drive — £25 swindle. Must land on the fairway or the money goes in the whip." },
+  ctp: { label: "CTP", icon: "🎯", color: "#4ECDC4", desc: "Closest to the Pin — £25 swindle. No winner = rolls into Don't Lose Your Ball pot." },
+  drive: { label: "LONG DRIVE", icon: "💥", color: "#E8786A", desc: "Longest Drive — £25 swindle. Must land on the fairway. No winner = rolls into Don't Lose Your Ball pot." },
   mulligan: { label: "MULLIGAN", icon: "🔄", color: "#9B5DE5", desc: "Each player gets ONE mulligan to use on any shot during this hole." },
 };
 
@@ -139,13 +139,13 @@ const ODDS_CATEGORIES = [
 const RULES = [
   { title: "Format", text: "Front 9: 4 vs 4 Scratch Texas Scramble (stroke play). Back 9: 2 matches of 2 vs 2 Match Play." },
   { title: "Tee Shots", text: "Front 9 — each team must use at least 2 tee shots from each member. Back 9 — each pair must use 3 tee shots each." },
-  { title: "Closest to the Pin", text: "£25 swindle on all par 3s (holes 5, 10, 15). No winner = prize rolls to next par 3. If all exhausted, money goes in the whip." },
-  { title: "Longest Drive", text: "£25 swindle on Hole 8. Must land on the fairway. No fairway hit = money goes in the whip." },
-  { title: "Don't Lose Your Ball", text: "£25 swindle, whole round. Keep your designated marked ball. Multiple survivors = putt-off." },
+  { title: "Closest to the Pin", text: "£25 swindle on Hole 10 only. No winner = money rolls into the Don't Lose Your Ball pot." },
+  { title: "Longest Drive", text: "£25 swindle on Hole 8. Must land on the fairway. No winner = money rolls into the Don't Lose Your Ball pot." },
+  { title: "Don't Lose Your Ball", text: "£25 swindle, whole round. Keep your designated marked ball. Multiple survivors = putt-off. Unclaimed LD or CTP money rolls in." },
   { title: "One Club Challenge", text: "Hole 4 (Hell Corner) — one club only for the entire hole, including putting." },
-  { title: "Mulligan Hole", text: "Hole 18 — each player gets one mulligan on any shot." },
+  { title: "Mulligan Hole", text: "Hole 9 — each player gets one mulligan on any shot." },
   { title: "Par to Pints", text: "First par after hole 1 triggers a 50/50 spinner — beer or miniature. You must down it." },
-  { title: "First Round Token", text: "Hit a hazard = receive the token. It changes hands across the course. Holding it at the end of each 9 = you buy the first round." },
+  { title: "First Round Token", text: "Hit a hazard = receive the token. It changes hands across the course. Holding it at the end of hole 18 = you buy the first round of drinks after." },
 ];
 
 // ─── STYLES ─────────────────────────────────────────────────────────────────────
