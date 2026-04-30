@@ -138,7 +138,7 @@ const ODDS_CATEGORIES = [
 
 const RULES = [
   { title: "Format", text: "Front 9: 4 vs 4 Scratch Texas Scramble (stroke play). Back 9: 2 matches of 2 vs 2 Match Play." },
-  { title: "Tee Shots", text: "Front 9 — each team must use at least 2 tee shots from each member. Back 9 — each pair must use 3 tee shots each." },
+  { title: "Tee Shots", text: "Front 9 — each team must use at least 2 tee shots from each member." },
   { title: "Closest to the Pin", text: "£25 swindle on Hole 10 only. No winner = money rolls into the Don't Lose Your Ball pot." },
   { title: "Longest Drive", text: "£25 swindle on Hole 8. Must land on the fairway. No winner = money rolls into the Don't Lose Your Ball pot." },
   { title: "Don't Lose Your Ball", text: "£25 swindle, whole round. Keep your designated marked ball. Multiple survivors = putt-off. Unclaimed LD or CTP money rolls in." },
@@ -546,7 +546,7 @@ function HomePage({ scores, currentHole, setPage, setSelectedHole, onShowResults
               <Card style={{ padding: 12, gridColumn: "span 2" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
-                    <div style={{ fontSize: 16, marginBottom: 4 }}>⚾</div>
+                    <div style={{ fontSize: 16, marginBottom: 4 }}>🏌🏼</div>
                     <div style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1, fontFamily: "'Oswald', sans-serif", textTransform: "uppercase" }}>Don't Lose the Ball</div>
                     <div style={{ fontSize: 22, fontWeight: 700, color: ballAliveColor, fontFamily: "'Oswald', sans-serif" }}>£{ballPot}</div>
                     <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>{ballSub}</div>
